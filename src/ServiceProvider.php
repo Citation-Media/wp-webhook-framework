@@ -27,12 +27,12 @@ class ServiceProvider {
 			'webhook_url'        => null,
 			'hook_group'         => 'wpwf',
 			'process_hook'       => 'wpwf_send_webhook',
-			'allowed_post_types' => array( 'zg_products' ),
+			'allowed_post_types' => array(),
 		);
 
 		$this->config = array_merge( $defaults, $config );
 
-		$url              = (string) ( $this->config['webhook_url'] ?? ( defined( 'ZG_PIM_WEBHOOK_URL' ) ? ZG_PIM_WEBHOOK_URL : '' ) );
+		$url              = (string) ( $this->config['webhook_url'] ?? '' );
 		$this->dispatcher = $dispatcher ?: new Dispatcher(
 			$url,
 			(string) $this->config['process_hook'],

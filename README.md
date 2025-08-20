@@ -9,22 +9,22 @@ Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking P
   - Post: post_type
   - Term: taxonomy
   - User: roles[]
-- Default post restriction: ['zg_products'] (configurable)
+- Default post restriction: [] (configurable)
 - ACF-aware (adds acf_field_key/name)
 
 ## Install
 ```bash
-composer require juvo/wp-webhook-framework
+composer require citation-media/wp-webhook-framework
 ```
 Ensure Action Scheduler is active (dependency is declared).
 
 ## Usage
 ```php
-$provider = new \Juvo\WpWebhookFramework\ServiceProvider([
+$provider = new \CitationMedia\WpWebhookFramework\ServiceProvider([
   'webhook_url'        => 'https://example.com/webhook',
   'hook_group'         => 'wpwf',
   'process_hook'       => 'wpwf_send_webhook',
-  'allowed_post_types' => ['zg_products'],
+  'allowed_post_types' => ['post', 'page'],
 ]);
 $provider->register();
 ```
@@ -35,7 +35,7 @@ Example payload:
   "action": "update",
   "entity": "post",
   "id": 123,
-  "post_type": "zg_products",
+  "post_type": "post",
   "acf_field_key": "field_abc",
   "acf_field_name": "some_field"
 }

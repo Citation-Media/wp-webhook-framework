@@ -6,7 +6,7 @@ use CitationMedia\WpWebhookFramework\Support\Payload;
 
 /**
  * Emits webhooks for post lifecycle and meta changes.
- * Restricted to configured post types (default: ['zg_products']).
+ * Restricted to configured post types (default: empty array).
  */
 class PostEmitter {
 
@@ -17,7 +17,7 @@ class PostEmitter {
 	/**
 	 * @param string[] $allowedPostTypes
 	 */
-	public function __construct( Dispatcher $dispatcher, array $allowedPostTypes = array( 'zg_products' ) ) {
+	public function __construct( Dispatcher $dispatcher, array $allowedPostTypes = array() ) {
 		$this->dispatcher       = $dispatcher;
 		$this->allowedPostTypes = $allowedPostTypes;
 	}

@@ -37,15 +37,14 @@ class ServiceProvider {
 	/**
 	 * Constructor for ServiceProvider.
 	 *
-	 * @param array{webhook_url?:string|null,hook_group?:string,process_hook?:string,allowed_post_types?:string[]} $config     Configuration array.
-	 * @param Dispatcher|null                                                                                      $dispatcher Optional dispatcher instance.
+	 * @param array{webhook_url?:string|null,hook_group?:string,process_hook?:string} $config     Configuration array.
+	 * @param Dispatcher|null                                                         $dispatcher Optional dispatcher instance.
 	 */
 	public function __construct( array $config = array(), ?Dispatcher $dispatcher = null ) {
 		$defaults = array(
-			'webhook_url'        => null,
-			'hook_group'         => 'wpwf',
-			'process_hook'       => 'wpwf_send_webhook',
-			'allowed_post_types' => array(),
+			'webhook_url'  => null,
+			'hook_group'   => 'wpwf',
+			'process_hook' => 'wpwf_send_webhook',
 		);
 
 		$this->config = array_merge( $defaults, $config );
@@ -73,7 +72,7 @@ class ServiceProvider {
 			4
 		);
 
-		$post_emitter = new PostEmitter( $this->dispatcher, (array) $this->config['allowed_post_types'] );
+		$post_emitter = new PostEmitter( $this->dispatcher );
 		$term_emitter = new TermEmitter( $this->dispatcher );
 		$user_emitter = new UserEmitter( $this->dispatcher );
 		$meta_emitter = new MetaEmitter( $this->dispatcher, $post_emitter, $term_emitter, $user_emitter );

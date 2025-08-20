@@ -38,12 +38,12 @@ abstract class AbstractEmitter {
 	/**
 	 * Schedule a webhook with the given parameters.
 	 *
-	 * @param string $action The action type (create, update, delete).
-	 * @param string $entity_type The entity type (post, term, user).
-	 * @param int|string $entity_id The entity ID.
+	 * @param string              $action The action type (create, update, delete).
+	 * @param string              $entity_type The entity type (post, term, user).
+	 * @param int|string          $entity_id The entity ID.
 	 * @param array<string,mixed> $payload The payload data.
 	 */
-	protected function schedule(string $action, string $entity_type, int|string $entity_id, array $payload ): void {
+	protected function schedule( string $action, string $entity_type, int|string $entity_id, array $payload ): void {
 		$this->dispatcher->schedule( $action, $entity_type, $entity_id, $payload );
 	}
 
@@ -52,7 +52,7 @@ abstract class AbstractEmitter {
 	 *
 	 * @return Dispatcher The dispatcher instance.
 	 */
-	protected function getDispatcher(): Dispatcher {
+	protected function get_dispatcher(): Dispatcher {
 		return $this->dispatcher;
 	}
 }

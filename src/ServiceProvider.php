@@ -1,4 +1,9 @@
 <?php
+/**
+ * ServiceProvider class for the WP Webhook Framework.
+ *
+ * @package CitationMedia\WpWebhookFramework
+ */
 
 namespace CitationMedia\WpWebhookFramework;
 
@@ -9,18 +14,31 @@ use CitationMedia\WpWebhookFramework\Entities\MetaEmitter;
 use CitationMedia\WpWebhookFramework\Support\AcfUtil;
 
 /**
+ * Class ServiceProvider
+ *
  * Registers WordPress hooks and wires emitters to the dispatcher.
  */
 class ServiceProvider {
 
+	/**
+	 * The webhook dispatcher instance.
+	 *
+	 * @var Dispatcher
+	 */
 	private Dispatcher $dispatcher;
 
-	/** @var array<string,mixed> */
+	/**
+	 * Configuration array for the service provider.
+	 *
+	 * @var array<string,mixed>
+	 */
 	private array $config;
 
 	/**
-	 * @param array{webhook_url?:string|null,hook_group?:string,process_hook?:string,allowed_post_types?:string[]} $config
-	 * @param Dispatcher|null                                                                                      $dispatcher
+	 * Constructor for ServiceProvider.
+	 *
+	 * @param array{webhook_url?:string|null,hook_group?:string,process_hook?:string,allowed_post_types?:string[]} $config     Configuration array.
+	 * @param Dispatcher|null                                                                                      $dispatcher Optional dispatcher instance.
 	 */
 	public function __construct( array $config = array(), ?Dispatcher $dispatcher = null ) {
 		$defaults = array(
@@ -88,7 +106,7 @@ class ServiceProvider {
 			function ( $value, $object_id, $field ) use ( $meta_emitter ) {
 				[$entity, $id] = AcfUtil::parse_object_id( $object_id );
 
-				if ( $entity === null || $id === null ) {
+				if ( null === $entity || null === $id ) {
 					return $value;
 				}
 

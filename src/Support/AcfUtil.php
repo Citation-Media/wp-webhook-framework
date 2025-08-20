@@ -25,10 +25,7 @@ final class AcfUtil {
 			return array( 'post', (int) $object_id );
 		}
 
-		if ( ! is_string( $object_id ) ) {
-			return array( null, null );
-		}
-
+		// At this point, $object_id is not numeric, so it must be a string
 		if ( preg_match( '/^post_(\d+)$/', $object_id, $m ) ) {
 			return array( 'post', (int) $m[1] );
 		}

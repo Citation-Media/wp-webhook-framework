@@ -1,0 +1,40 @@
+# Dependencies
+vendor/
+
+# PHPStan cache
+.phpstan.cache
+.phpstan.result.cache
+
+# PHPCS cache
+.phpcs.cache
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Composer
+composer.lock
+
+# Testing
+phpunit.xml
+tests/_output/
+tests/_support/_generated/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+temp/

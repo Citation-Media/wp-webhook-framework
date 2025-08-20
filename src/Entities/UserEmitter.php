@@ -29,10 +29,7 @@ class UserEmitter extends AbstractEmitter {
 		$this->emit( $user_id, 'update' );
 	}
 
-	public function emit(int $user_id, string $action): void
-	{
-		$user  = get_userdata( $user_id );
-		$roles = ( $user && is_array( $user->roles ?? null ) ) ? array_values( $user->roles ) : array();
-		$this->schedule( $action, 'user', $user_id, array( 'roles' => $roles ) );
+	public function emit(int $user_id, string $action): void {
+		$this->schedule( $action, 'user', $user_id, Payload::user($user_id) );
 	}
 }

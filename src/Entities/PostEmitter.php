@@ -46,6 +46,6 @@ class PostEmitter extends AbstractEmitter {
 
 	public function emit(int $post_id, string $action): void
 	{
-		$this->schedule( $action, 'post', $post_id, array( 'post_type' => get_post_type( $post_id) ) );
+		$this->schedule( $action, 'post', $post_id,  Payload::post( $post_id));
 	}
 }

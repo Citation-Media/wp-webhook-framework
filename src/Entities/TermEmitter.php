@@ -25,13 +25,7 @@ class TermEmitter extends AbstractEmitter {
 		$this->emit( $term_id, 'delete' );
 	}
 
-	public function emit(int $term_id, string $action): void
-	{
-		$term = get_term( $term_id );
-		if ( ! $term || ! isset( $term->taxonomy ) ) {
-			return;
-		}
-
-		$this->schedule( $action, 'term', $term_id, array( 'taxonomy' => $term->taxonomy ) );
+	public function emit(int $term_id, string $action): void {
+		$this->schedule( $action, 'term', $term_id, Payload::term($term_id) );
 	}
 }

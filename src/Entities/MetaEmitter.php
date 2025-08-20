@@ -70,22 +70,25 @@ class MetaEmitter extends AbstractEmitter {
 	}
 
 	private function handlePostMetaChange( int $post_id, string $meta_key, $meta_value = null, bool $deleted = false ): void {
-		$this->emit( $post_id, $deleted ? 'delete' : 'update', $meta_key );
+		$this->emit( $post_id, $deleted ? 'delete' : 'update', $meta_key, Payload::post($post_id) );
 		$this->postEmitter->emit( $post_id, 'update');
 	}
 
 	private function handleTermMetaChange( int $term_id, string $meta_key, $meta_value = null, bool $deleted = false ): void {
-		$this->emit( $term_id, $deleted ? 'delete' : 'update', $meta_key );
+		$this->emit( $term_id, $deleted ? 'delete' : 'update', $meta_key, Payload::term($term_id) );
 		$this->termEmitter->emit( $term_id, 'update');
 	}
 
 	private function handleUserMetaChange( int $user_id, string $meta_key, $meta_value = null, bool $deleted = false ): void {
-		$this->emit( $user_id, $deleted ? 'delete' : 'update', $meta_key );
+		$this->emit( $user_id, $deleted ? 'delete' : 'update', $meta_key, Payload::user($user_id));
 		$this->userEmitter->emit( $user_id, 'update');
 	}
 
-	public function emit(int $user_id, string $action, string $meta_key): void
+	public function emit(int $user_id, string $action, string $meta_key, array $payload = array()): void
 	{
-		$this->schedule( $action, 'meta', $user_id, array( 'meta_key' => $meta_key ) );
+		$this->schedule( $action, 'meta', $user_id, array_merge(
+			$payload,
+			array( 'meta_key' => $meta_key )
+		) );
 	}
 }

@@ -15,7 +15,7 @@ use CitationMedia\WpWebhookFramework\Support\Payload;
  *
  * Emits webhooks for user lifecycle and meta changes.
  */
-class UserEmitter extends AbstractEmitter {
+class User extends Emitter {
 
 	/**
 	 * Constructor for UserEmitter.

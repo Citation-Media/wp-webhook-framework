@@ -15,28 +15,28 @@ use CitationMedia\WpWebhookFramework\Support\Payload;
  *
  * Routes meta changes to owning entity updates and optionally emits meta-level webhooks.
  */
-class MetaEmitter extends AbstractEmitter {
+class Meta extends Emitter {
 
 	/**
 	 * Post emitter instance.
 	 *
-	 * @var PostEmitter
+	 * @var Post
 	 */
-	private PostEmitter $post_emitter;
+	private Post $post_emitter;
 
 	/**
 	 * Term emitter instance.
 	 *
-	 * @var TermEmitter
+	 * @var Term
 	 */
-	private TermEmitter $term_emitter;
+	private Term $term_emitter;
 
 	/**
 	 * User emitter instance.
 	 *
-	 * @var UserEmitter
+	 * @var User
 	 */
-	private UserEmitter $user_emitter;
+	private User $user_emitter;
 
 	/**
 	 * Constructor for MetaEmitter.
@@ -44,11 +44,11 @@ class MetaEmitter extends AbstractEmitter {
 	 * Initializes the MetaEmitter with a dispatcher and entity emitters.
 	 *
 	 * @param Dispatcher  $dispatcher   The webhook dispatcher instance.
-	 * @param PostEmitter $post_emitter Post emitter instance.
-	 * @param TermEmitter $term_emitter Term emitter instance.
-	 * @param UserEmitter $user_emitter User emitter instance.
+	 * @param Post $post_emitter Post emitter instance.
+	 * @param Term $term_emitter Term emitter instance.
+	 * @param User $user_emitter User emitter instance.
 	 */
-	public function __construct( Dispatcher $dispatcher, PostEmitter $post_emitter, TermEmitter $term_emitter, UserEmitter $user_emitter ) {
+	public function __construct(Dispatcher $dispatcher, Post $post_emitter, Term $term_emitter, User $user_emitter ) {
 		parent::__construct( $dispatcher );
 		$this->post_emitter = $post_emitter;
 		$this->term_emitter = $term_emitter;

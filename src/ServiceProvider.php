@@ -7,10 +7,10 @@
 
 namespace CitationMedia\WpWebhookFramework;
 
-use CitationMedia\WpWebhookFramework\Entities\PostEmitter;
-use CitationMedia\WpWebhookFramework\Entities\TermEmitter;
-use CitationMedia\WpWebhookFramework\Entities\UserEmitter;
-use CitationMedia\WpWebhookFramework\Entities\MetaEmitter;
+use CitationMedia\WpWebhookFramework\Entities\Post;
+use CitationMedia\WpWebhookFramework\Entities\Term;
+use CitationMedia\WpWebhookFramework\Entities\User;
+use CitationMedia\WpWebhookFramework\Entities\Meta;
 use CitationMedia\WpWebhookFramework\Support\AcfUtil;
 
 /**
@@ -72,10 +72,10 @@ class ServiceProvider {
 			4
 		);
 
-		$post_emitter = new PostEmitter( $this->dispatcher );
-		$term_emitter = new TermEmitter( $this->dispatcher );
-		$user_emitter = new UserEmitter( $this->dispatcher );
-		$meta_emitter = new MetaEmitter( $this->dispatcher, $post_emitter, $term_emitter, $user_emitter );
+		$post_emitter = new Post( $this->dispatcher );
+		$term_emitter = new Term( $this->dispatcher );
+		$user_emitter = new User( $this->dispatcher );
+		$meta_emitter = new Meta( $this->dispatcher, $post_emitter, $term_emitter, $user_emitter );
 
 		add_action( 'save_post', array( $post_emitter, 'onSavePost' ), 10, 3 );
 		add_action( 'before_delete_post', array( $post_emitter, 'onDeletePost' ), 10, 1 );

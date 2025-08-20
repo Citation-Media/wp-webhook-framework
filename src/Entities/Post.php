@@ -16,7 +16,7 @@ use CitationMedia\WpWebhookFramework\Support\Payload;
  * Emits webhooks for post lifecycle and meta changes.
  * Restricted to configured post types (default: empty array).
  */
-class PostEmitter extends AbstractEmitter {
+class Post extends Emitter {
 
 	/**
 	 * Constructor for PostEmitter.

@@ -17,7 +17,7 @@ use CitationMedia\WpWebhookFramework\Support\Payload;
  *
  * Provides common functionality for scheduling webhooks and handling ACF updates.
  */
-abstract class AbstractEmitter {
+abstract class Emitter {
 
 	/**
 	 * The dispatcher instance.

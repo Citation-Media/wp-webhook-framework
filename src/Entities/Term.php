@@ -15,7 +15,7 @@ use CitationMedia\WpWebhookFramework\Support\Payload;
  *
  * Emits webhooks for term lifecycle and meta changes.
  */
-class TermEmitter extends AbstractEmitter {
+class Term extends Emitter {
 
 	/**
 	 * Constructor for TermEmitter.

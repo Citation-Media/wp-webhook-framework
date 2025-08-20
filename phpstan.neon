@@ -1,0 +1,8 @@
+parameters:
+    level: 6
+    reportUnmatchedIgnoredErrors: false
+    paths:
+        - src/
+    ignoreErrors:
+    scanDirectories:
+        - vendor

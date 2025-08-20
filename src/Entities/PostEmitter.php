@@ -43,27 +43,4 @@ class PostEmitter extends AbstractEmitter {
 
 		$this->scheduleWebhook( 'delete', 'post', $post_id, Payload::for_post( $post_type ) );
 	}
-
-	/**
-	 * Handle ACF update routed to a post.
-	 *
-	 * @param array<string,mixed> $field
-	 */
-	public function onAcfUpdate( int $post_id, array $field ): void {
-		$post_type = get_post_type( $post_id );
-		if ( ! $post_type || ! in_array( $post_type, $this->allowedPostTypes, true ) ) {
-			return;
-		}
-
-		$this->handleAcfUpdate( 'post', $post_id, $field, Payload::for_post( $post_type ) );
-	}
-
-	private function emitUpdateForPost( int $post_id ): void {
-		$post_type = get_post_type( $post_id );
-		if ( ! $post_type || ! in_array( $post_type, $this->allowedPostTypes, true ) ) {
-			return;
-		}
-
-		$this->scheduleWebhook( 'update', 'post', (int) $post_id, Payload::for_post( $post_type ) );
-	}
 }

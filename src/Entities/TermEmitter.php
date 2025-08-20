@@ -25,20 +25,6 @@ class TermEmitter extends AbstractEmitter {
 		$this->scheduleWebhook( 'delete', 'term', $term_id, Payload::for_term( $taxonomy ) );
 	}
 
-	/**
-	 * Handle ACF update routed to a term.
-	 *
-	 * @param array<string,mixed> $field
-	 */
-	public function onAcfUpdate( int $term_id, array $field ): void {
-		$taxonomy = $this->getTaxonomy( $term_id );
-		if ( $taxonomy === null ) {
-			return;
-		}
-
-		$this->handleAcfUpdate( 'term', $term_id, $field, Payload::for_term( $taxonomy ) );
-	}
-
 	private function emitUpdateForTerm( int $term_id ): void {
 		$taxonomy = $this->getTaxonomy( $term_id );
 		if ( $taxonomy === null ) {

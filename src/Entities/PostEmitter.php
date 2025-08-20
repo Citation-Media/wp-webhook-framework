@@ -32,7 +32,7 @@ class PostEmitter extends AbstractEmitter {
 		}
 
 		$action = $update ? 'update' : 'create';
-		$this->scheduleWebhook( $action, 'post', $post_id, Payload::for_post( $post_type ) );
+		$this->emit($post_id ,$action);
 	}
 
 	public function onDeletePost( int $post_id ): void {
@@ -41,6 +41,11 @@ class PostEmitter extends AbstractEmitter {
 			return;
 		}
 
-		$this->scheduleWebhook( 'delete', 'post', $post_id, Payload::for_post( $post_type ) );
+		$this->emit($post_id ,'delete');
+	}
+
+	public function emit(int $post_id, string $action): void
+	{
+		$this->schedule( $action, 'post', $post_id, array( 'post_type' => get_post_type( $post_id) ) );
 	}
 }

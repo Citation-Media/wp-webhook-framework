@@ -14,18 +14,25 @@ class UserEmitter extends AbstractEmitter {
 	}
 
 	public function onUserRegister( int $user_id ): void {
-		$this->scheduleWebhook( 'create', 'user', $user_id, Payload::for_user( $user_id ) );
+		$this->emit( $user_id, 'create' );
 	}
 
 	public function onProfileUpdate( int $user_id ): void {
-		$this->scheduleWebhook( 'update', 'user', $user_id, Payload::for_user( $user_id ) );
+		$this->emit( $user_id, 'update' );
 	}
 
 	public function onDeletedUser( int $user_id ): void {
-		$this->scheduleWebhook( 'delete', 'user', $user_id, Payload::for_user( $user_id ) );
+		$this->emit( $user_id, 'delete' );
 	}
 
 	private function emitUpdateForUser( int $user_id ): void {
-		$this->scheduleWebhook( 'update', 'user', (int) $user_id, Payload::for_user( (int) $user_id ) );
+		$this->emit( $user_id, 'update' );
+	}
+
+	public function emit(int $user_id, string $action): void
+	{
+		$user  = get_userdata( $user_id );
+		$roles = ( $user && is_array( $user->roles ?? null ) ) ? array_values( $user->roles ) : array();
+		$this->schedule( $action, 'user', $user_id, array( 'roles' => $roles ) );
 	}
 }

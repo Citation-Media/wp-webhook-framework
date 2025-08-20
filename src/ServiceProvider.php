@@ -71,15 +71,15 @@ class ServiceProvider {
 		add_action( 'profile_update', array( $user_emitter, 'onProfileUpdate' ), 10, 1 );
 		add_action( 'deleted_user', array( $user_emitter, 'onDeletedUser' ), 10, 1 );
 
-		add_action( 'added_post_meta', array( $meta_emitter, 'onAddedPostMeta' ), 10, 4 );
+		add_action( 'added_post_meta', array( $meta_emitter, 'onUpdatedPostMeta' ), 10, 4 );
 		add_action( 'updated_post_meta', array( $meta_emitter, 'onUpdatedPostMeta' ), 10, 4 );
 		add_action( 'deleted_post_meta', array( $meta_emitter, 'onDeletedPostMeta' ), 10, 4 );
 
-		add_action( 'added_term_meta', array( $meta_emitter, 'onAddedTermMeta' ), 10, 4 );
+		add_action( 'added_term_meta', array( $meta_emitter, 'onUpdatedTermMeta' ), 10, 4 );
 		add_action( 'updated_term_meta', array( $meta_emitter, 'onUpdatedTermMeta' ), 10, 4 );
 		add_action( 'deleted_term_meta', array( $meta_emitter, 'onDeletedTermMeta' ), 10, 4 );
 
-		add_action( 'added_user_meta', array( $meta_emitter, 'onAddedUserMeta' ), 10, 4 );
+		add_action( 'added_user_meta', array( $meta_emitter, 'onUpdatedUserMeta' ), 10, 4 );
 		add_action( 'updated_user_meta', array( $meta_emitter, 'onUpdatedUserMeta' ), 10, 4 );
 		add_action( 'deleted_user_meta', array( $meta_emitter, 'onDeletedUserMeta' ), 10, 4 );
 

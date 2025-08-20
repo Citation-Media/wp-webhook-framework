@@ -36,23 +36,6 @@ abstract class AbstractEmitter {
 	}
 
 	/**
-	 * Handle ACF update for any entity type.
-	 *
-	 * @param string $entity_type The entity type (post, term, user).
-	 * @param int $entity_id The entity ID.
-	 * @param array<string,mixed> $field The ACF field data.
-	 * @param array<string,mixed> $base_payload The base payload for the entity.
-	 */
-	protected function handleAcfUpdate( string $entity_type, int $entity_id, array $field, array $base_payload ): void {
-		$payload = array_merge(
-			$base_payload,
-			Payload::from_acf_field( $field )
-		);
-
-		$this->dispatcher->schedule( 'update', $entity_type, $entity_id, $payload );
-	}
-
-	/**
 	 * Schedule a webhook with the given parameters.
 	 *
 	 * @param string $action The action type (create, update, delete).
@@ -60,7 +43,7 @@ abstract class AbstractEmitter {
 	 * @param int|string $entity_id The entity ID.
 	 * @param array<string,mixed> $payload The payload data.
 	 */
-	protected function scheduleWebhook( string $action, string $entity_type, int|string $entity_id, array $payload ): void {
+	protected function schedule(string $action, string $entity_type, int|string $entity_id, array $payload ): void {
 		$this->dispatcher->schedule( $action, $entity_type, $entity_id, $payload );
 	}
 

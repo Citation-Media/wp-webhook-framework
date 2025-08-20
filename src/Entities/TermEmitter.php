@@ -7,24 +7,22 @@ use CitationMedia\WpWebhookFramework\Support\Payload;
 /**
  * Emits webhooks for term lifecycle and meta changes.
  */
-class TermEmitter {
-
-	private Dispatcher $dispatcher;
+class TermEmitter extends AbstractEmitter {
 
 	public function __construct( Dispatcher $dispatcher ) {
-		$this->dispatcher = $dispatcher;
+		parent::__construct( $dispatcher );
 	}
 
 	public function onCreatedTerm( int $term_id, int $tt_id, string $taxonomy ): void {
-		$this->dispatcher->schedule( 'create', 'term', $term_id, Payload::for_term( $taxonomy ) );
+		$this->scheduleWebhook( 'create', 'term', $term_id, Payload::for_term( $taxonomy ) );
 	}
 
 	public function onEditedTerm( int $term_id, int $tt_id, string $taxonomy ): void {
-		$this->dispatcher->schedule( 'update', 'term', $term_id, Payload::for_term( $taxonomy ) );
+		$this->scheduleWebhook( 'update', 'term', $term_id, Payload::for_term( $taxonomy ) );
 	}
 
 	public function onDeletedTerm( int $term_id, int $tt_id, string $taxonomy ): void {
-		$this->dispatcher->schedule( 'delete', 'term', $term_id, Payload::for_term( $taxonomy ) );
+		$this->scheduleWebhook( 'delete', 'term', $term_id, Payload::for_term( $taxonomy ) );
 	}
 
 	/**
@@ -38,12 +36,7 @@ class TermEmitter {
 			return;
 		}
 
-		$payload = array_merge(
-			Payload::for_term( $taxonomy ),
-			Payload::from_acf_field( $field )
-		);
-
-		$this->dispatcher->schedule( 'update', 'term', $term_id, $payload );
+		$this->handleAcfUpdate( 'term', $term_id, $field, Payload::for_term( $taxonomy ) );
 	}
 
 	private function emitUpdateForTerm( int $term_id ): void {
@@ -52,7 +45,7 @@ class TermEmitter {
 			return;
 		}
 
-		$this->dispatcher->schedule( 'update', 'term', (int) $term_id, Payload::for_term( $taxonomy ) );
+		$this->scheduleWebhook( 'update', 'term', (int) $term_id, Payload::for_term( $taxonomy ) );
 	}
 
 	private function getTaxonomy( int $term_id ): ?string {

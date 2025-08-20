@@ -7,24 +7,22 @@ use CitationMedia\WpWebhookFramework\Support\Payload;
 /**
  * Emits webhooks for user lifecycle and meta changes.
  */
-class UserEmitter {
-
-	private Dispatcher $dispatcher;
+class UserEmitter extends AbstractEmitter {
 
 	public function __construct( Dispatcher $dispatcher ) {
-		$this->dispatcher = $dispatcher;
+		parent::__construct( $dispatcher );
 	}
 
 	public function onUserRegister( int $user_id ): void {
-		$this->dispatcher->schedule( 'create', 'user', $user_id, Payload::for_user( $user_id ) );
+		$this->scheduleWebhook( 'create', 'user', $user_id, Payload::for_user( $user_id ) );
 	}
 
 	public function onProfileUpdate( int $user_id ): void {
-		$this->dispatcher->schedule( 'update', 'user', $user_id, Payload::for_user( $user_id ) );
+		$this->scheduleWebhook( 'update', 'user', $user_id, Payload::for_user( $user_id ) );
 	}
 
 	public function onDeletedUser( int $user_id ): void {
-		$this->dispatcher->schedule( 'delete', 'user', $user_id, Payload::for_user( $user_id ) );
+		$this->scheduleWebhook( 'delete', 'user', $user_id, Payload::for_user( $user_id ) );
 	}
 
 	/**
@@ -33,15 +31,10 @@ class UserEmitter {
 	 * @param array<string,mixed> $field
 	 */
 	public function onAcfUpdate( int $user_id, array $field ): void {
-		$payload = array_merge(
-			Payload::for_user( $user_id ),
-			Payload::from_acf_field( $field )
-		);
-
-		$this->dispatcher->schedule( 'update', 'user', $user_id, $payload );
+		$this->handleAcfUpdate( 'user', $user_id, $field, Payload::for_user( $user_id ) );
 	}
 
 	private function emitUpdateForUser( int $user_id ): void {
-		$this->dispatcher->schedule( 'update', 'user', (int) $user_id, Payload::for_user( (int) $user_id ) );
+		$this->scheduleWebhook( 'update', 'user', (int) $user_id, Payload::for_user( (int) $user_id ) );
 	}
 }

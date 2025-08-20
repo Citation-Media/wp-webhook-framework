@@ -8,9 +8,8 @@ use CitationMedia\WpWebhookFramework\Support\Payload;
  * Emits webhooks for post lifecycle and meta changes.
  * Restricted to configured post types (default: empty array).
  */
-class PostEmitter {
+class PostEmitter extends AbstractEmitter {
 
-	private Dispatcher $dispatcher;
 	/** @var string[] */
 	private array $allowedPostTypes;
 
@@ -18,7 +17,7 @@ class PostEmitter {
 	 * @param string[] $allowedPostTypes
 	 */
 	public function __construct( Dispatcher $dispatcher, array $allowedPostTypes = array() ) {
-		$this->dispatcher       = $dispatcher;
+		parent::__construct( $dispatcher );
 		$this->allowedPostTypes = $allowedPostTypes;
 	}
 
@@ -33,7 +32,7 @@ class PostEmitter {
 		}
 
 		$action = $update ? 'update' : 'create';
-		$this->dispatcher->schedule( $action, 'post', $post_id, Payload::for_post( $post_type ) );
+		$this->scheduleWebhook( $action, 'post', $post_id, Payload::for_post( $post_type ) );
 	}
 
 	public function onDeletePost( int $post_id ): void {
@@ -42,7 +41,7 @@ class PostEmitter {
 			return;
 		}
 
-		$this->dispatcher->schedule( 'delete', 'post', $post_id, Payload::for_post( $post_type ) );
+		$this->scheduleWebhook( 'delete', 'post', $post_id, Payload::for_post( $post_type ) );
 	}
 
 	/**
@@ -56,12 +55,7 @@ class PostEmitter {
 			return;
 		}
 
-		$payload = array_merge(
-			Payload::for_post( $post_type ),
-			Payload::from_acf_field( $field )
-		);
-
-		$this->dispatcher->schedule( 'update', 'post', $post_id, $payload );
+		$this->handleAcfUpdate( 'post', $post_id, $field, Payload::for_post( $post_type ) );
 	}
 
 	private function emitUpdateForPost( int $post_id ): void {
@@ -70,6 +64,6 @@ class PostEmitter {
 			return;
 		}
 
-		$this->dispatcher->schedule( 'update', 'post', (int) $post_id, Payload::for_post( $post_type ) );
+		$this->scheduleWebhook( 'update', 'post', (int) $post_id, Payload::for_post( $post_type ) );
 	}
 }

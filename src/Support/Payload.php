@@ -2,10 +2,10 @@
 /**
  * Payload utility class for generating webhook payload data.
  *
- * @package CitationMedia\WpWebhookFramework\Support
+ * @package Citation\WP_Webhook_Framework\Support
  */
 
-namespace CitationMedia\WpWebhookFramework\Support;
+namespace Citation\WP_Webhook_Framework\Support;
 
 /**
  * Class Payload

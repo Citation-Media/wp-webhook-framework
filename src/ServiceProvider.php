@@ -2,16 +2,16 @@
 /**
  * ServiceProvider class for the WP Webhook Framework.
  *
- * @package CitationMedia\WpWebhookFramework
+ * @package Citation\WP_Webhook_Framework
  */
 
-namespace CitationMedia\WpWebhookFramework;
+namespace Citation\WP_Webhook_Framework;
 
-use CitationMedia\WpWebhookFramework\Entities\Post;
-use CitationMedia\WpWebhookFramework\Entities\Term;
-use CitationMedia\WpWebhookFramework\Entities\User;
-use CitationMedia\WpWebhookFramework\Entities\Meta;
-use CitationMedia\WpWebhookFramework\Support\AcfUtil;
+use Citation\WP_Webhook_Framework\Entities\Post;
+use Citation\WP_Webhook_Framework\Entities\Term;
+use Citation\WP_Webhook_Framework\Entities\User;
+use Citation\WP_Webhook_Framework\Entities\Meta;
+use Citation\WP_Webhook_Framework\Support\AcfUtil;
 
 /**
  * Class ServiceProvider

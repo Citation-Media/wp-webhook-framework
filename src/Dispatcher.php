@@ -2,12 +2,12 @@
 /**
  * Webhook dispatcher class.
  *
- * @package CitationMedia\WpWebhookFramework
+ * @package Citation\WP_Webhook_Framework
  */
 
 declare(strict_types=1);
 
-namespace CitationMedia\WpWebhookFramework;
+namespace Citation\WP_Webhook_Framework;
 
 use ActionScheduler_Store;
 

@@ -9,7 +9,7 @@
   },
   "autoload": {
     "psr-4": {
-      "CitationMedia\\WpWebhookFramework\\": "src/"
+      "Citation\\WP_Webhook_Framework\\": "src/"
     }
   },
   "scripts": {

@@ -2,13 +2,13 @@
 /**
  * MetaEmitter class for handling meta-related webhook events.
  *
- * @package CitationMedia\WpWebhookFramework\Entities
+ * @package Citation\WP_Webhook_Framework\Entities
  */
 
-namespace CitationMedia\WpWebhookFramework\Entities;
+namespace Citation\WP_Webhook_Framework\Entities;
 
-use CitationMedia\WpWebhookFramework\Dispatcher;
-use CitationMedia\WpWebhookFramework\Support\Payload;
+use Citation\WP_Webhook_Framework\Dispatcher;
+use Citation\WP_Webhook_Framework\Support\Payload;
 
 /**
  * Class MetaEmitter
@@ -43,12 +43,12 @@ class Meta extends Emitter {
 	 *
 	 * Initializes the MetaEmitter with a dispatcher and entity emitters.
 	 *
-	 * @param Dispatcher  $dispatcher   The webhook dispatcher instance.
-	 * @param Post $post_emitter Post emitter instance.
-	 * @param Term $term_emitter Term emitter instance.
-	 * @param User $user_emitter User emitter instance.
+	 * @param Dispatcher $dispatcher   The webhook dispatcher instance.
+	 * @param Post       $post_emitter Post emitter instance.
+	 * @param Term       $term_emitter Term emitter instance.
+	 * @param User       $user_emitter User emitter instance.
 	 */
-	public function __construct(Dispatcher $dispatcher, Post $post_emitter, Term $term_emitter, User $user_emitter ) {
+	public function __construct( Dispatcher $dispatcher, Post $post_emitter, Term $term_emitter, User $user_emitter ) {
 		parent::__construct( $dispatcher );
 		$this->post_emitter = $post_emitter;
 		$this->term_emitter = $term_emitter;

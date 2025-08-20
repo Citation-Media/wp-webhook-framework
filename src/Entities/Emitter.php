@@ -2,15 +2,15 @@
 /**
  * Abstract base class for webhook emitters.
  *
- * @package CitationMedia\WpWebhookFramework\Entities
+ * @package Citation\WP_Webhook_Framework\Entities
  */
 
 declare(strict_types=1);
 
-namespace CitationMedia\WpWebhookFramework\Entities;
+namespace Citation\WP_Webhook_Framework\Entities;
 
-use CitationMedia\WpWebhookFramework\Dispatcher;
-use CitationMedia\WpWebhookFramework\Support\Payload;
+use Citation\WP_Webhook_Framework\Dispatcher;
+use Citation\WP_Webhook_Framework\Support\Payload;
 
 /**
  * Abstract base class for all webhook emitters.

@@ -44,6 +44,29 @@ abstract class Emitter {
 	 * @param array<string,mixed> $payload     The payload data.
 	 */
 	protected function schedule( string $action, string $entity_type, int|string $entity_id, array $payload ): void {
+
+		$url = "";
+		if (
+			defined('WP_WEBHOOK_FRAMEWORK_URL')
+			&& WP_WEBHOOK_FRAMEWORK_URL !== ''
+			&& is_string(WP_WEBHOOK_FRAMEWORK_URL)
+		) {
+			$url = WP_WEBHOOK_FRAMEWORK_URL;
+		}
+
+		$url = apply_filters(
+			"wp_webhook_framework_url",
+			$url,
+			$entity_type,
+			$entity_id,
+			$action,
+			$payload
+		);
+
+		if ( empty( $url ) ) {
+			return; // No URL provided, nothing to schedule.
+		}
+
 		// Apply filter to allow modification of the payload
 		$filtered_payload = apply_filters(
 			"wp_webhook_framework_{$entity_type}_payload",
@@ -57,7 +80,7 @@ abstract class Emitter {
 			return;
 		}
 
-		$this->dispatcher->schedule( $action, $entity_type, $entity_id, $filtered_payload );
+		$this->dispatcher->schedule( $url, $action, $entity_type, $entity_id, $filtered_payload );
 	}
 
 	/**

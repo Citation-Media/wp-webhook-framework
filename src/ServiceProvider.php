@@ -28,54 +28,34 @@ class ServiceProvider {
 	private Dispatcher $dispatcher;
 
 	/**
-	 * Configuration array for the service provider.
-	 *
-	 * @var array<string,mixed>
-	 */
-	private array $config;
-
-	/**
 	 * Constructor for ServiceProvider.
 	 *
 	 * @param array{webhook_url?:string|null,hook_group?:string,process_hook?:string} $config     Configuration array.
 	 * @param Dispatcher|null                                                         $dispatcher Optional dispatcher instance.
 	 */
 	public function __construct( array $config = array(), ?Dispatcher $dispatcher = null ) {
-		$defaults = array(
-			'webhook_url'  => null,
-			'hook_group'   => 'wpwf',
-			'process_hook' => 'wpwf_send_webhook',
-		);
-
-		$this->config = array_merge( $defaults, $config );
-
-		$url              = (string) ( $this->config['webhook_url'] ?? '' );
-		$this->dispatcher = $dispatcher ?: new Dispatcher(
-			$url,
-			(string) $this->config['process_hook'],
-			(string) $this->config['hook_group']
-		);
+		$this->dispatcher = $dispatcher ?: new Dispatcher();
 	}
 
 	/**
 	 * Registers all actions/filters. Safe to call multiple times.
 	 */
-	public function register(): void {
-		if ( ! $this->dispatcher->is_enabled() ) {
-			return;
-		}
+	public static function register(): void {
+
+		$instance = new self();
+		$instance->dispatcher = new Dispatcher();
 
 		add_action(
-			$this->config['process_hook'],
-			array( $this->dispatcher, 'process_scheduled_webhook' ),
+			'wpwf_send_webhook',
+			array( $instance->dispatcher, 'process_scheduled_webhook' ),
 			10,
-			4
+			5
 		);
 
-		$post_emitter = new Post( $this->dispatcher );
-		$term_emitter = new Term( $this->dispatcher );
-		$user_emitter = new User( $this->dispatcher );
-		$meta_emitter = new Meta( $this->dispatcher, $post_emitter, $term_emitter, $user_emitter );
+		$post_emitter = new Post( $instance->dispatcher );
+		$term_emitter = new Term( $instance->dispatcher );
+		$user_emitter = new User( $instance->dispatcher );
+		$meta_emitter = new Meta( $instance->dispatcher, $post_emitter, $term_emitter, $user_emitter );
 
 		add_action( 'save_post', array( $post_emitter, 'onSavePost' ), 10, 3 );
 		add_action( 'before_delete_post', array( $post_emitter, 'onDeletePost' ), 10, 1 );

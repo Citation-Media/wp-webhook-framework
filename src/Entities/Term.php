@@ -17,14 +17,7 @@ use Citation\WP_Webhook_Framework\Support\Payload;
  */
 class Term extends Emitter {
 
-	/**
-	 * Constructor for TermEmitter.
-	 *
-	 * @param Dispatcher $dispatcher The webhook dispatcher instance.
-	 */
-	public function __construct( Dispatcher $dispatcher ) {
-		parent::__construct( $dispatcher );
-	}
+
 
 	/**
 	 * Handle term creation event.
@@ -33,7 +26,7 @@ class Term extends Emitter {
 	 * @param int    $tt_id    The term taxonomy ID.
 	 * @param string $taxonomy The taxonomy name.
 	 */
-	public function onCreatedTerm( int $term_id, int $tt_id, string $taxonomy ): void {
+	public function on_created_term( int $term_id, int $tt_id, string $taxonomy ): void {
 		$this->emit( $term_id, 'create' );
 	}
 
@@ -44,7 +37,7 @@ class Term extends Emitter {
 	 * @param int    $tt_id    The term taxonomy ID.
 	 * @param string $taxonomy The taxonomy name.
 	 */
-	public function onEditedTerm( int $term_id, int $tt_id, string $taxonomy ): void {
+	public function on_edited_term( int $term_id, int $tt_id, string $taxonomy ): void {
 		$this->emit( $term_id, 'update' );
 	}
 
@@ -55,7 +48,7 @@ class Term extends Emitter {
 	 * @param int    $tt_id    The term taxonomy ID.
 	 * @param string $taxonomy The taxonomy name.
 	 */
-	public function onDeletedTerm( int $term_id, int $tt_id, string $taxonomy ): void {
+	public function on_deleted_term( int $term_id, int $tt_id, string $taxonomy ): void {
 		$this->emit( $term_id, 'delete' );
 	}
 

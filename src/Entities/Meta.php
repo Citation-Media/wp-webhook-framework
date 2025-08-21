@@ -65,13 +65,13 @@ class Meta extends Emitter {
 	 * @param mixed     $prev_value The previous value. Most likely not filled. Value has to be passed to update_metadata().
 	 * @return bool|null
 	 */
-	public function onUpdatedPostMeta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
+	public function on_updated_post_meta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
 
 		if ( empty( $prev_value ) ) {
 			$prev_value = get_post_meta( $object_id, $meta_key, true );
 		}
 
-		$this->onMetaUpdate( 'post', $object_id, $meta_key, $meta_value, $prev_value );
+		$this->on_meta_update( 'post', $object_id, $meta_key, $meta_value, $prev_value );
 		return $check;
 	}
 
@@ -83,8 +83,8 @@ class Meta extends Emitter {
 	 * @param string $meta_key   The meta key.
 	 * @param mixed  $meta_value The meta value.
 	 */
-	public function onDeletedPostMeta( $meta_ids, int $object_id, string $meta_key, $meta_value ): void {
-		$this->onMetaUpdate( 'post', $object_id, $meta_key, $meta_value );
+	public function on_deleted_post_meta( $meta_ids, int $object_id, string $meta_key, $meta_value ): void {
+		$this->on_meta_update( 'post', $object_id, $meta_key, $meta_value );
 	}
 
 	/**
@@ -97,13 +97,13 @@ class Meta extends Emitter {
 	 * @param mixed     $prev_value The previous value. Most likely not filled. Value has to be passed to update_metadata().
 	 * @return bool|null
 	 */
-	public function onUpdatedTermMeta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
+	public function on_updated_term_meta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
 
 		if ( empty( $prev_value ) ) {
 			$prev_value = get_term_meta( $object_id, $meta_key, true );
 		}
 
-		$this->onMetaUpdate( 'term', $object_id, $meta_key, $meta_value, $prev_value );
+		$this->on_meta_update( 'term', $object_id, $meta_key, $meta_value, $prev_value );
 		return $check;
 	}
 
@@ -115,8 +115,8 @@ class Meta extends Emitter {
 	 * @param string $meta_key   The meta key.
 	 * @param mixed  $meta_value The meta value.
 	 */
-	public function onDeletedTermMeta( $meta_ids, int $object_id, string $meta_key, $meta_value ): void {
-		$this->onMetaUpdate( 'term', $object_id, $meta_key, $meta_value );
+	public function on_deleted_term_meta( $meta_ids, int $object_id, string $meta_key, $meta_value ): void {
+		$this->on_meta_update( 'term', $object_id, $meta_key, $meta_value );
 	}
 
 	/**
@@ -129,13 +129,13 @@ class Meta extends Emitter {
 	 * @param mixed     $prev_value The previous value. Most likely not filled. Value has to be passed to update_metadata().
 	 * @return bool|null
 	 */
-	public function onUpdatedUserMeta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
+	public function on_updated_user_meta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
 
 		if ( empty( $prev_value ) ) {
 			$prev_value = get_user_meta( $object_id, $meta_key, true );
 		}
 
-		$this->onMetaUpdate( 'user', $object_id, $meta_key, $meta_value, $prev_value );
+		$this->on_meta_update( 'user', $object_id, $meta_key, $meta_value, $prev_value );
 		return $check;
 	}
 
@@ -147,8 +147,8 @@ class Meta extends Emitter {
 	 * @param string $meta_key   The meta key.
 	 * @param mixed  $meta_value The meta value.
 	 */
-	public function onDeletedUserMeta( $meta_ids, int $object_id, string $meta_key, $meta_value ): void {
-		$this->onMetaUpdate( 'user', $object_id, $meta_key, $meta_value );
+	public function on_deleted_user_meta( $meta_ids, int $object_id, string $meta_key, $meta_value ): void {
+		$this->on_meta_update( 'user', $object_id, $meta_key, $meta_value );
 	}
 
 	/**
@@ -160,7 +160,7 @@ class Meta extends Emitter {
 	 * @param mixed  $new_value  The new value.
 	 * @param mixed  $old_value  The old value.
 	 */
-	public function onMetaUpdate( string $meta_type, int $object_id, string $meta_key, mixed $new_value, mixed $old_value = null ): void {
+	public function on_meta_update( string $meta_type, int $object_id, string $meta_key, mixed $new_value, mixed $old_value = null ): void {
 
 		// No change do nothing. Never compare strict!
 		if ( $new_value === $old_value ) {
@@ -168,13 +168,13 @@ class Meta extends Emitter {
 		}
 
 		// Automatically detect if this is effectively a deletion
-		$is_deletion = $this->isDeletion( $new_value, $old_value );
+		$is_deletion = $this->is_deletion( $new_value, $old_value );
 
 		// Emit meta-level webhook
-		$this->emit( $object_id, $is_deletion ? 'delete' : 'update', $meta_key, $this->getPayload( $meta_type, $object_id ) );
+		$this->emit( $object_id, $is_deletion ? 'delete' : 'update', $meta_key, $this->get_payload( $meta_type, $object_id ) );
 
 		// Trigger upstream entity-level update
-		$this->triggerEntityUpdate( $meta_type, $object_id );
+		$this->trigger_entity_update( $meta_type, $object_id );
 	}
 
 	/**
@@ -189,7 +189,7 @@ class Meta extends Emitter {
 	 * @param mixed               $original The original value.
 	 */
 	public function acf_update_handler( string $entity, int $id, array $field, $value = null, $original = null ): void {
-		$this->onMetaUpdate( $entity, $id, $field['name'], $value, $original );
+		$this->on_meta_update( $entity, $id, $field['name'], $value, $original );
 	}
 
 
@@ -201,7 +201,7 @@ class Meta extends Emitter {
 	 * @param mixed $old_value The old value.
 	 * @return bool True if this represents a deletion.
 	 */
-	private function isDeletion( $new_value, $old_value ): bool {
+	private function is_deletion( $new_value, $old_value ): bool {
 		// If new value is empty/null and old value existed, it's a deletion
 		return empty( $new_value ) && ! empty( $old_value );
 	}
@@ -213,7 +213,7 @@ class Meta extends Emitter {
 	 * @param int    $object_id The object ID.
 	 * @return array<string,mixed> The payload data.
 	 */
-	private function getPayload( string $meta_type, int $object_id ): array {
+	private function get_payload( string $meta_type, int $object_id ): array {
 		switch ( $meta_type ) {
 			case 'post':
 				return Payload::post( $object_id );
@@ -232,7 +232,7 @@ class Meta extends Emitter {
 	 * @param string $meta_type The meta type.
 	 * @param int    $object_id The object ID.
 	 */
-	private function triggerEntityUpdate( string $meta_type, int $object_id ): void {
+	private function trigger_entity_update( string $meta_type, int $object_id ): void {
 		switch ( $meta_type ) {
 			case 'post':
 				$this->post_emitter->emit( $object_id, 'update' );
@@ -261,6 +261,7 @@ class Meta extends Emitter {
 			$entity_id,
 			array_merge(
 				$payload,
+				// phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Not a database query, just webhook payload data
 				array( 'meta_key' => $meta_key )
 			)
 		);

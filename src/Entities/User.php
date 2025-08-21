@@ -17,21 +17,14 @@ use Citation\WP_Webhook_Framework\Support\Payload;
  */
 class User extends Emitter {
 
-	/**
-	 * Constructor for UserEmitter.
-	 *
-	 * @param Dispatcher $dispatcher The webhook dispatcher instance.
-	 */
-	public function __construct( Dispatcher $dispatcher ) {
-		parent::__construct( $dispatcher );
-	}
+
 
 	/**
 	 * Handle user registration event.
 	 *
 	 * @param int $user_id The user ID.
 	 */
-	public function onUserRegister( int $user_id ): void {
+	public function on_user_register( int $user_id ): void {
 		$this->emit( $user_id, 'create' );
 	}
 
@@ -40,7 +33,7 @@ class User extends Emitter {
 	 *
 	 * @param int $user_id The user ID.
 	 */
-	public function onProfileUpdate( int $user_id ): void {
+	public function on_profile_update( int $user_id ): void {
 		$this->emit( $user_id, 'update' );
 	}
 
@@ -59,7 +52,7 @@ class User extends Emitter {
 	 *
 	 * @param int $user_id The user ID.
 	 */
-	public function onDeletedUser( int $user_id ): void {
+	public function on_deleted_user( int $user_id ): void {
 		$this->emit( $user_id, 'delete' );
 	}
 }

@@ -75,20 +75,20 @@ class ServiceProvider {
 		$user_emitter = new User( $instance->dispatcher );
 		$meta_emitter = new Meta( $instance->dispatcher, $post_emitter, $term_emitter, $user_emitter );
 
-		add_action( 'save_post', array( $post_emitter, 'onSavePost' ), 10, 3 );
-		add_action( 'before_delete_post', array( $post_emitter, 'onDeletePost' ), 10, 1 );
+		add_action( 'save_post', array( $post_emitter, 'on_save_post' ), 10, 3 );
+		add_action( 'before_delete_post', array( $post_emitter, 'on_delete_post' ), 10, 1 );
 
-		add_action( 'created_term', array( $term_emitter, 'onCreatedTerm' ), 10, 3 );
-		add_action( 'edited_term', array( $term_emitter, 'onEditedTerm' ), 10, 3 );
-		add_action( 'delete_term', array( $term_emitter, 'onDeletedTerm' ), 10, 3 );
+		add_action( 'created_term', array( $term_emitter, 'on_created_term' ), 10, 3 );
+		add_action( 'edited_term', array( $term_emitter, 'on_edited_term' ), 10, 3 );
+		add_action( 'delete_term', array( $term_emitter, 'on_deleted_term' ), 10, 3 );
 
-		add_action( 'user_register', array( $user_emitter, 'onUserRegister' ), 10, 1 );
-		add_action( 'profile_update', array( $user_emitter, 'onProfileUpdate' ), 10, 1 );
-		add_action( 'deleted_user', array( $user_emitter, 'onDeletedUser' ), 10, 1 );
+		add_action( 'user_register', array( $user_emitter, 'on_user_register' ), 10, 1 );
+		add_action( 'profile_update', array( $user_emitter, 'on_profile_update' ), 10, 1 );
+		add_action( 'deleted_user', array( $user_emitter, 'on_deleted_user' ), 10, 1 );
 
-		add_action( 'deleted_post_meta', array( $meta_emitter, 'onDeletedPostMeta' ), 10, 4 );
-		add_action( 'deleted_term_meta', array( $meta_emitter, 'onDeletedTermMeta' ), 10, 4 );
-		add_action( 'deleted_user_meta', array( $meta_emitter, 'onDeletedUserMeta' ), 10, 4 );
+		add_action( 'deleted_post_meta', array( $meta_emitter, 'on_deleted_post_meta' ), 10, 4 );
+		add_action( 'deleted_term_meta', array( $meta_emitter, 'on_deleted_term_meta' ), 10, 4 );
+		add_action( 'deleted_user_meta', array( $meta_emitter, 'on_deleted_user_meta' ), 10, 4 );
 
 		add_filter(
 			'acf/update_value',
@@ -107,8 +107,8 @@ class ServiceProvider {
 		);
 
 		// Add filters for all meta types with high priority to run late
-		add_filter( 'update_post_metadata', array( $meta_emitter, 'onUpdatedPostMeta' ), 999, 5 );
-		add_filter( 'update_term_metadata', array( $meta_emitter, 'onUpdatedTermMeta' ), 999, 5 );
-		add_filter( 'update_user_metadata', array( $meta_emitter, 'onUpdatedUserMeta' ), 999, 5 );
+		add_filter( 'update_post_metadata', array( $meta_emitter, 'on_updated_post_meta' ), 999, 5 );
+		add_filter( 'update_term_metadata', array( $meta_emitter, 'on_updated_term_meta' ), 999, 5 );
+		add_filter( 'update_user_metadata', array( $meta_emitter, 'on_updated_user_meta' ), 999, 5 );
 	}
 }

@@ -18,16 +18,7 @@ use Citation\WP_Webhook_Framework\Support\Payload;
  */
 class Post extends Emitter {
 
-	/**
-	 * Constructor for PostEmitter.
-	 *
-	 * Initializes the PostEmitter with a dispatcher.
-	 *
-	 * @param Dispatcher $dispatcher The webhook dispatcher instance.
-	 */
-	public function __construct( Dispatcher $dispatcher ) {
-		parent::__construct( $dispatcher );
-	}
+
 
 	/**
 	 * Handle post save event (create/update).
@@ -36,7 +27,7 @@ class Post extends Emitter {
 	 * @param \WP_Post $post    The post object.
 	 * @param bool     $update  Whether this is an update or new post.
 	 */
-	public function onSavePost( int $post_id, \WP_Post $post, bool $update ): void {
+	public function on_save_post( int $post_id, \WP_Post $post, bool $update ): void {
 		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
 			return;
 		}
@@ -50,7 +41,7 @@ class Post extends Emitter {
 	 *
 	 * @param int $post_id The post ID.
 	 */
-	public function onDeletePost( int $post_id ): void {
+	public function on_delete_post( int $post_id ): void {
 		$this->emit( $post_id, 'delete' );
 	}
 

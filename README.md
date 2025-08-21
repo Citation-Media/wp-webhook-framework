@@ -6,9 +6,9 @@ Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking P
 - Action Scheduler only dispatch, 5s delay
 - Dedupe on action+entity+id
 - Payload invariants:
-  - Post: post_type
-  - Term: taxonomy
-  - User: roles[]
+  - Post: post_type + rest_url (if REST enabled)
+  - Term: taxonomy + rest_url (if REST enabled)
+  - User: roles[] + rest_url (if REST enabled)
 - ACF-aware (adds acf_field_key/name)
 - Payload filtering system for custom webhook control
 - **Failure monitoring and blocking:**
@@ -162,11 +162,12 @@ Example payload:
   "action": "update",
   "entity": "post",
   "id": 123,
-  "post_type": "post"
+  "post_type": "post",
+  "rest_url": "https://example.com/wp-json/wp/v2/posts/123"
 }
 ```
 
-The payload includes the entity data plus the action, entity type, and ID added by the framework.
+The payload includes the entity data plus the action, entity type, and ID added by the framework. REST API URLs are automatically included when the entity type has REST support enabled (`show_in_rest` for post types and taxonomies, WP_REST_Users_Controller availability for users).
 
 ## Failure Monitoring & Blocking
 

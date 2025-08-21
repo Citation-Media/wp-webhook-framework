@@ -31,7 +31,17 @@ class Dispatcher {
 			return;
 		}
 
-		$url = '';
+		// Apply filter first to allow customization
+		$url = apply_filters(
+			'wpwf_url',
+			'',
+			$entity,
+			$id,
+			$action,
+			$payload
+		);
+
+		// Constants always take precedence over filters for reliability
 		if (
 			defined( 'WP_WEBHOOK_FRAMEWORK_URL' )
 			&& WP_WEBHOOK_FRAMEWORK_URL !== ''
@@ -39,15 +49,6 @@ class Dispatcher {
 		) {
 			$url = WP_WEBHOOK_FRAMEWORK_URL;
 		}
-
-		$url = apply_filters(
-			'wpwf_url',
-			$url,
-			$entity,
-			$id,
-			$action,
-			$payload
-		);
 
 		if ( empty( $url ) ) {
 			return; // No URL provided, nothing to schedule.

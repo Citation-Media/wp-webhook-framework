@@ -49,11 +49,11 @@ $sameProvider = \Citation\WP_Webhook_Framework\ServiceProvider::get_instance();
 Define these constants in your `wp-config.php` to configure webhook behavior:
 
 ```php
-// Webhook endpoint URL (optional - can be overridden by wpwf_url filter)
+// Webhook endpoint URL (always takes precedence over filters when defined)
 define('WP_WEBHOOK_FRAMEWORK_URL', 'https://example.com/webhook');
 ```
 
-**Note:** The `WP_WEBHOOK_FRAMEWORK_URL` constant provides a default webhook endpoint, but can be overridden using the `wpwf_url` filter for more granular control.
+**Note:** The `WP_WEBHOOK_FRAMEWORK_URL` constant always takes precedence over the `wpwf_url` filter when defined. This ensures that configuration via code remains authoritative and cannot be overridden by filters.
 
 ## Payload Filtering
 

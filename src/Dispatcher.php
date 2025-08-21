@@ -127,10 +127,6 @@ class Dispatcher {
 					/* translators: %s: webhook URL */
 					__( 'Webhook URL is blocked due to consecutive failures: %s', 'wp-webhook-framework' ),
 					$url
-				),
-				array(
-					'url'    => $url,
-					'reason' => 'blocked_due_to_failures',
 				)
 			);
 		}
@@ -165,23 +161,18 @@ class Dispatcher {
 			throw new WP_Exception(
 				'webhook_delivery_failed',
 				sprintf(
-					/* translators: 1: webhook URL, 2: error message */
-					__( 'Webhook delivery failed for URL %1$s: %2$s', 'wp-webhook-framework' ),
+					/* translators: 1: webhook URL, 2: action, 3: entity, 4: ID, 5: error message */
+					__( 'Webhook delivery failed for URL %1$s (action: %2$s, entity: %3$s, ID: %4$s): %5$s', 'wp-webhook-framework' ),
 					$url,
+					$action,
+					$entity,
+					$id,
 					$error_message
-				),
-				array(
-					'url'      => $url,
-					'action'   => $action,
-					'entity'   => $entity,
-					'id'       => $id,
-					'response' => $response,
-					'error'    => $error_message,
 				)
 			);
-		} else {
-			$this->handle_webhook_success( $url );
 		}
+
+		$this->handle_webhook_success( $url );
 	}
 
 	/**

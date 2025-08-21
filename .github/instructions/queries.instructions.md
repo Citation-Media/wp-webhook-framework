@@ -28,7 +28,7 @@ $query = new WP_Query([
     'no_found_rows'  => true,
 ]);
  ```
-Use when: You're not need pagination, such as on homepage widgets or API responses.
+Use when: You don't need pagination, such as on homepage widgets or API responses.
 
 ## ignore_sticky_posts
 If sticky posts aren't important for your use case, you can tell WordPress to ignore them.

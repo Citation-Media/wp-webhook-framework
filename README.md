@@ -1,6 +1,6 @@
 # WP Webhook Framework
 
-Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking POSTs for create/update/delete of posts, terms, and users. Meta changes trigger the entity update. ACF updates include field context.
+Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking POSTs for create/update/delete of posts, terms, and users. Meta changes trigger the entity update. ACF updates include field context. Features intelligent failure monitoring with email notifications, automatic blocking, and comprehensive filtering options.
 
 ## Features
 - Action Scheduler only dispatch, 5s delay
@@ -11,6 +11,12 @@ Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking P
   - User: roles[]
 - ACF-aware (adds acf_field_key/name)
 - Payload filtering system for custom webhook control
+- **Failure monitoring and blocking:**
+  - Email notifications for failed deliveries (non-200 responses)
+  - Automatic blocking after 10 consecutive failures within 1 hour
+  - Transient-based failure tracking with automatic reset
+  - Filterable email notifications with i18n support
+  - Clean DTO architecture for maintainable code
 
 ## Install
 ```bash
@@ -125,3 +131,71 @@ Example payload:
 ```
 
 The payload includes the entity data plus the action, entity type, and ID added by the framework.
+
+## Failure Monitoring & Blocking
+
+The framework includes built-in failure monitoring and automatic blocking to prevent spam to failing endpoints:
+
+### Features
+- **Email Notifications**: Sends email to site admin on first failure
+- **Failure Tracking**: Uses WordPress transients to track consecutive failures per URL
+- **Automatic Blocking**: Blocks URLs after 10 consecutive failures within 1 hour
+- **Auto-Reset**: Failure counts reset after successful delivery or 1-hour timeout
+
+### How It Works
+1. Each webhook delivery is monitored for HTTP response codes
+2. Non-200 responses are tracked using a single WordPress transient per URL
+3. First failure triggers an email notification to the admin
+4. After 10 consecutive failures within 1 hour, the URL is blocked
+5. Blocked URLs are automatically unblocked after 1 hour
+6. Successful deliveries reset both failure count and blocked status
+7. All data automatically expires after 1 hour via transient expiration
+
+### Transient Structure
+Each URL uses a single transient containing failure data managed by the `Failure` DTO:
+```php
+array(
+    'count'             => 5,           // Number of consecutive failures
+    'first_failure_at'  => 1234567890,  // Timestamp of first failure in current window
+    'blocked'           => true,        // Whether URL is currently blocked
+    'blocked_time'      => 1234567890   // When URL was blocked
+)
+```
+
+### Email Notifications
+When a webhook fails for the first time, an email is sent to the site administrator containing:
+- The failing webhook URL
+- Error details (WP_Error or HTTP status code)
+- Timestamp of the failure
+- Warning about upcoming blocking
+
+### Filterable Email Notifications
+The failure notification emails are fully filterable, allowing you to customize recipients, content, headers, and more.
+
+#### Available Filter
+- `wpwf_failure_notification_email` - Filter email data before sending
+
+#### Filter Signature
+```php
+add_filter('wpwf_failure_notification_email', function($email_data, $url, $response) {
+    // $email_data: array - Contains recipient, subject, message, headers, and more
+    // $url: string - The webhook URL that failed
+    // $response: mixed - The response from wp_remote_post
+
+    return $email_data; // Return modified email data
+}, 10, 3);
+```
+
+### Configuration
+The failure monitoring is automatic and doesn't require additional configuration. The thresholds are:
+- **Failure Threshold**: 10 consecutive failures
+- **Time Window**: 1 hour
+- **Block Duration**: 1 hour (automatic unblocking)
+
+## Code Quality
+This framework follows WordPress coding standards and modern PHP practices:
+- **PHPCS Compliant**: All code passes PHP CodeSniffer validation
+- **Type Safe**: Full PHPStan static analysis support
+- **i18n Ready**: All user-facing strings are internationalized
+- **Filterable**: Extensive WordPress filter integration
+- **Well Documented**: Comprehensive inline documentation and examples

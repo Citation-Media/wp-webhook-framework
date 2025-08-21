@@ -111,6 +111,11 @@ class Dispatcher {
 	 */
 	public function process_scheduled_webhook( string $url, string $action, string $entity, $id, array $payload ): void {
 
+		// Check if this URL is blocked due to too many failures
+		if ( $this->is_url_blocked( $url ) ) {
+			return;
+		}
+
 		$body = array_merge(
 			$payload,
 			array(
@@ -124,9 +129,153 @@ class Dispatcher {
 			'body'     => wp_json_encode( $body ),
 			'headers'  => array( 'Content-Type' => 'application/json' ),
 			'timeout'  => 10,
-			'blocking' => false,
+			'blocking' => true, // Changed to blocking to check response
 		);
 
-		wp_remote_post( $url, $args );
+		$response = wp_remote_post( $url, $args );
+
+		// Check if the request was successful
+		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			$this->handle_webhook_failure( $url, $response );
+		} else {
+			$this->handle_webhook_success( $url );
+		}
+	}
+
+	/**
+	 * Handle successful webhook delivery.
+	 *
+	 * @param string $url The webhook URL.
+	 */
+	private function handle_webhook_success( string $url ): void {
+		// Reset failure count and unblock on success
+		$failure_dto = Failure::create_fresh();
+		$failure_dto->save( $url );
+	}
+
+	/**
+	 * Handle failed webhook delivery.
+	 *
+	 * @param string $url      The webhook URL.
+	 * @param mixed  $response The response from wp_remote_post.
+	 */
+	private function handle_webhook_failure( string $url, $response ): void {
+
+		$failure_dto = Failure::from_transient( $url );
+		$failure_dto->increment_count();
+		$failure_dto->save( $url );
+
+		// Send notification email on first failure
+		if ( 1 === $failure_dto->get_count() ) {
+			$this->send_failure_notification( $url, $response );
+		}
+
+		// Block URL if more than 10 consecutive failures in 1 hour
+		if ( $failure_dto->get_count() > 10 && ! $failure_dto->is_blocked() ) {
+			$this->block_url( $url );
+		}
+	}
+
+	/**
+	 * Block a URL due to too many failures.
+	 *
+	 * @param string $url The webhook URL.
+	 */
+	private function block_url( string $url ): void {
+		$failure_dto = Failure::from_transient( $url );
+		$failure_dto->set_blocked( true )->set_blocked_time( time() );
+		$failure_dto->save( $url );
+	}
+
+	/**
+	 * Check if a URL is blocked due to too many failures.
+	 *
+	 * @param string $url The webhook URL.
+	 * @return bool True if the URL is blocked.
+	 */
+	private function is_url_blocked( string $url ): bool {
+		$failure_dto = Failure::from_transient( $url );
+
+		// Check if block has expired (more than 1 hour ago)
+		if ( $failure_dto->is_block_expired() ) {
+			// Unblock automatically
+			$failure_dto->set_blocked( false );
+			$failure_dto->save( $url );
+			return false;
+		}
+
+		return $failure_dto->is_blocked();
+	}
+
+	/**
+	 * Send failure notification email to admin.
+	 *
+	 * @param string $url      The webhook URL.
+	 * @param mixed  $response The response from wp_remote_post.
+	 */
+	private function send_failure_notification( string $url, $response ): void {
+		$admin_email = get_option( 'admin_email' );
+		if ( ! $admin_email ) {
+			return;
+		}
+
+		// Set default error message
+		$error_message = '';
+		if ( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message();
+		} else {
+			$status_code   = wp_remote_retrieve_response_code( $response );
+			$error_message = sprintf(
+				/* translators: %d: HTTP status code */
+				__( 'HTTP Status Code: %d', 'wp-webhook-framework' ),
+				$status_code
+			);
+		}
+
+		// Set default message
+		$message = sprintf(
+			/* translators: 1: URL, 2: Error message, 3: Time */
+			__( 'A webhook delivery has failed.\n\nURL: %1$s\nError: %2$s\nTime: %3$s\n\nThis webhook will be blocked after 10 consecutive failures within 1 hour.', 'wp-webhook-framework' ),
+			$url,
+			$error_message,
+			current_time( 'mysql' )
+		);
+
+		// Set default subject
+		$subject = sprintf(
+			/* translators: %s: Site name */
+			__( 'Webhook Delivery Failed - %s', 'wp-webhook-framework' ),
+			get_bloginfo( 'name' )
+		);
+
+		// Set default recipient
+		$recipient = $admin_email;
+
+		// Set default headers
+		$headers = array( 'Content-Type: text/plain; charset=UTF-8' );
+
+		// Apply custom filter to allow modification of email data
+		$email_data = apply_filters(
+			'wpwf_failure_notification_email',
+			array(
+				'recipient'     => $recipient,
+				'subject'       => $subject,
+				'message'       => $message,
+				'headers'       => $headers,
+				'url'           => $url,
+				'error_message' => $error_message,
+				'response'      => $response,
+			),
+			$url,
+			$response
+		);
+
+		// Send the email with potentially modified data
+		wp_mail(
+			$email_data['recipient'],
+			$email_data['subject'],
+			$email_data['message'],
+			$email_data['headers']
+		);
 	}
 }

@@ -62,6 +62,7 @@ Control webhook payloads and delivery using WordPress filters. Each entity type 
 ### Available Filters
 - `wpwf_payload` - Filter webhook payloads
 - `wpwf_url` - Filter webhook url
+- `wpwf_excluded_meta_keys` - Exclude specific meta keys from webhook emission
 
 ### Filter Signature
 ```php
@@ -82,6 +83,15 @@ add_filter('wpwf_url', function($url, $entity, $id, $action, $payload) {
 
     return $url; // Return modified URL
 }, 10, 5);
+
+add_filter('wpwf_excluded_meta_keys', function($excluded_keys, $meta_key, $meta_type, $object_id) {
+    // $excluded_keys: array - Array of meta keys to exclude from webhooks
+    // $meta_key: string - The current meta key being processed
+    // $meta_type: string - The meta type (post, term, user)
+    // $object_id: int - The object ID
+
+    return $excluded_keys; // Return modified array of excluded keys
+}, 10, 4);
 ```
 
 ### Filter Examples
@@ -118,6 +128,32 @@ add_filter('wpwf_url', function($url, $entity, $id, $action, $payload) {
     }
     return $url;
 }, 10, 5);
+```
+
+**Exclude additional meta keys from webhooks:**
+```php
+add_filter('wpwf_excluded_meta_keys', function($excluded_keys, $meta_key, $meta_type, $object_id) {
+    // Add custom meta keys to exclude
+    $excluded_keys[] = '_my_internal_field';
+    $excluded_keys[] = '_temp_data';
+    
+    return $excluded_keys;
+}, 10, 4);
+```
+
+**Conditionally exclude meta keys based on post type:**
+```php
+add_filter('wpwf_excluded_meta_keys', function($excluded_keys, $meta_key, $meta_type, $object_id) {
+    // Only exclude ACF cache for specific post types
+    if ($meta_type === 'post' && str_starts_with($meta_key, '_acf_cache_')) {
+        $post = get_post($object_id);
+        if ($post && $post->post_type === 'product') {
+            $excluded_keys[] = $meta_key;
+        }
+    }
+    
+    return $excluded_keys;
+}, 10, 4);
 ```
 
 Example payload:

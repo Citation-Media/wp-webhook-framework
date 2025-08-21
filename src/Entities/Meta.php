@@ -167,6 +167,12 @@ class Meta extends Emitter {
 			return;
 		}
 
+		// Check if this meta key should be excluded from webhook emission
+		if ( $this->is_meta_key_excluded( $meta_key, $meta_type, $object_id ) ) {
+			// If excluded, do not trigger any webhooks including upstream entity updates
+			return;
+		}
+
 		// Automatically detect if this is effectively a deletion
 		$is_deletion = $this->is_deletion( $new_value, $old_value );
 
@@ -204,6 +210,40 @@ class Meta extends Emitter {
 	private function is_deletion( $new_value, $old_value ): bool {
 		// If new value is empty/null and old value existed, it's a deletion
 		return empty( $new_value ) && ! empty( $old_value );
+	}
+
+	/**
+	 * Check if a meta key should be excluded from webhook emission.
+	 *
+	 * @param string $meta_key   The meta key to check.
+	 * @param string $meta_type  The meta type (post, term, user).
+	 * @param int    $object_id  The object ID.
+	 * @return bool True if the meta key should be excluded.
+	 */
+	private function is_meta_key_excluded( string $meta_key, string $meta_type, int $object_id ): bool {
+		/**
+		 * Filter the list of meta keys that should be excluded from webhook emission.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param array<string> $excluded_keys Array of meta keys to exclude from webhooks.
+		 * @param string        $meta_key      The current meta key being processed.
+		 * @param string        $meta_type     The meta type (post, term, user).
+		 * @param int           $object_id     The object ID.
+		 */
+		$excluded_keys = apply_filters(
+			'wpwf_excluded_meta_keys',
+			array(
+				'_edit_lock',
+				'_edit_last',
+				'session_tokens',
+			),
+			$meta_key,
+			$meta_type,
+			$object_id
+		);
+
+		return in_array( $meta_key, $excluded_keys, true );
 	}
 
 	/**

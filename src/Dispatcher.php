@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace Citation\WP_Webhook_Framework;
 
 use ActionScheduler_Store;
-use Citation\WP_Webhook_Framework\WP_Exception;
 
 /**
  * Queues and sends webhooks. AS-only. Dedupe on action+entity+id.
@@ -122,7 +121,6 @@ class Dispatcher {
 		// Check if this URL is blocked due to too many failures
 		if ( $this->is_url_blocked( $url ) ) {
 			throw new WP_Exception(
-				'webhook_url_blocked',
 				sprintf(
 					/* translators: %s: webhook URL */
 					__( 'Webhook URL is blocked due to consecutive failures: %s', 'wp-webhook-framework' ),
@@ -159,7 +157,6 @@ class Dispatcher {
 			// providing better failure tracking and retry logic within the scheduler itself.
 			$error_message = $this->get_failure_error_message( $response );
 			throw new WP_Exception(
-				'webhook_delivery_failed',
 				sprintf(
 					/* translators: 1: webhook URL, 2: action, 3: entity, 4: ID, 5: error message */
 					__( 'Webhook delivery failed for URL %1$s (action: %2$s, entity: %3$s, ID: %4$s): %5$s', 'wp-webhook-framework' ),

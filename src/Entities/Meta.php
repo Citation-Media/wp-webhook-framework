@@ -169,8 +169,7 @@ class Meta extends Emitter {
 
 		// Check if this meta key should be excluded from webhook emission
 		if ( $this->is_meta_key_excluded( $meta_key, $meta_type, $object_id ) ) {
-			// Still trigger upstream entity-level update even if meta webhook is excluded
-			$this->trigger_entity_update( $meta_type, $object_id );
+			// If excluded, do not trigger any webhooks including upstream entity updates
 			return;
 		}
 
@@ -237,10 +236,7 @@ class Meta extends Emitter {
 			array(
 				'_edit_lock',
 				'_edit_last',
-				'_wp_old_slug',
-				'_wp_old_date',
-				'_wp_trash_meta_status',
-				'_wp_trash_meta_time',
+				'session_tokens',
 			),
 			$meta_key,
 			$meta_type,

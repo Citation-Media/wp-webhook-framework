@@ -235,7 +235,16 @@ class Dispatcher {
 		// Set default message
 		$message = sprintf(
 			/* translators: 1: URL, 2: Error message, 3: Time */
-			__( 'A webhook delivery has failed.\n\nURL: %1$s\nError: %2$s\nTime: %3$s\n\nThis webhook will be blocked after 10 consecutive failures within 1 hour.', 'wp-webhook-framework' ),
+			__(
+				'A webhook delivery has failed.
+
+URL: %1$s
+Error: %2$s
+Time: %3$s
+
+This webhook will be blocked after 10 consecutive failures within 1 hour.',
+				'wp-webhook-framework'
+			),
 			$url,
 			$error_message,
 			current_time( 'mysql' )

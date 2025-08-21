@@ -6,9 +6,9 @@ Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking P
 - Action Scheduler only dispatch, 5s delay
 - Dedupe on action+entity+id
 - Payload invariants:
-  - Post: post_type
-  - Term: taxonomy
-  - User: roles[]
+  - Post: post_type + rest_url (if REST enabled)
+  - Term: taxonomy + rest_url (if REST enabled)
+  - User: roles[] + rest_url (if REST enabled)
 - ACF-aware (adds acf_field_key/name)
 - Payload filtering system for custom webhook control
 - **Failure monitoring and blocking:**
@@ -54,6 +54,67 @@ define('WP_WEBHOOK_FRAMEWORK_URL', 'https://example.com/webhook');
 ```
 
 **Note:** The `WP_WEBHOOK_FRAMEWORK_URL` constant always takes precedence over the `wpwf_url` filter when defined. This ensures that configuration via code remains authoritative and cannot be overridden by filters.
+
+## REST API URLs
+
+The framework automatically includes REST API URLs in webhook payloads when the respective entity type has REST support enabled. This makes it easier for webhook consumers to discover and interact with WordPress REST endpoints.
+
+### REST Support Detection
+
+**For Posts:**
+- Checks `$post_type_object->show_in_rest` property
+- Uses `$post_type_object->rest_base` or falls back to default naming conventions
+- Example URL: `https://example.com/wp-json/wp/v2/posts/123`
+
+**For Terms:**
+- Checks `$taxonomy_object->show_in_rest` property  
+- Uses `$taxonomy_object->rest_base` or falls back to taxonomy name
+- Example URL: `https://example.com/wp-json/wp/v2/categories/456`
+
+**For Users:**
+- Checks if `WP_REST_Users_Controller` class exists (users REST API is enabled by default)
+- Example URL: `https://example.com/wp-json/wp/v2/users/789`
+
+### REST URL Examples
+
+```json
+// Post with REST support enabled
+{
+  "action": "create",
+  "entity": "post",
+  "id": 123,
+  "post_type": "post",
+  "rest_url": "https://example.com/wp-json/wp/v2/posts/123"
+}
+
+// Term with REST support enabled  
+{
+  "action": "update",
+  "entity": "term", 
+  "id": 456,
+  "taxonomy": "category",
+  "rest_url": "https://example.com/wp-json/wp/v2/categories/456"
+}
+
+// User with REST support enabled
+{
+  "action": "update",
+  "entity": "user",
+  "id": 789, 
+  "roles": ["editor"],
+  "rest_url": "https://example.com/wp-json/wp/v2/users/789"
+}
+
+// Custom post type without REST support (no rest_url included)
+{
+  "action": "create",
+  "entity": "post",
+  "id": 101,
+  "post_type": "private_post_type"
+}
+```
+
+**Note:** REST URLs are only included when REST support is explicitly enabled for the entity type. This maintains backward compatibility while providing enhanced functionality for REST-enabled entities.
 
 ## Payload Filtering
 
@@ -126,11 +187,12 @@ Example payload:
   "action": "update",
   "entity": "post",
   "id": 123,
-  "post_type": "post"
+  "post_type": "post",
+  "rest_url": "https://example.com/wp-json/wp/v2/posts/123"
 }
 ```
 
-The payload includes the entity data plus the action, entity type, and ID added by the framework.
+The payload includes the entity data plus the action, entity type, and ID added by the framework. REST API URLs are automatically included when the entity type has REST support enabled (`show_in_rest` for post types and taxonomies, WP_REST_Users_Controller availability for users).
 
 ## Failure Monitoring & Blocking
 

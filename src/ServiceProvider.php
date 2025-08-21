@@ -37,7 +37,7 @@ class ServiceProvider {
 	/**
 	 * Private constructor to prevent direct instantiation.
 	 *
-	 * @param Dispatcher|null                                                         $dispatcher Optional dispatcher instance.
+	 * @param Dispatcher|null $dispatcher Optional dispatcher instance.
 	 */
 	private function __construct( ?Dispatcher $dispatcher = null ) {
 		$this->dispatcher = $dispatcher ?: new Dispatcher();
@@ -46,10 +46,10 @@ class ServiceProvider {
 	/**
 	 * Get singleton instance.
 	 *
-	 * @param Dispatcher|null                                                         $dispatcher Optional dispatcher instance.
+	 * @param Dispatcher|null $dispatcher Optional dispatcher instance.
 	 * @return ServiceProvider
 	 */
-	public static function get_instance( ?Dispatcher $dispatcher = null ): ServiceProvider {
+	private static function get_instance( ?Dispatcher $dispatcher = null ): ServiceProvider {
 		if ( null === self::$instance ) {
 			self::$instance = new self( $dispatcher );
 		}
@@ -67,7 +67,7 @@ class ServiceProvider {
 			'wpwf_send_webhook',
 			array( $instance->dispatcher, 'process_scheduled_webhook' ),
 			10,
-			4
+			5
 		);
 
 		$post_emitter = new Post( $instance->dispatcher );
@@ -86,35 +86,29 @@ class ServiceProvider {
 		add_action( 'profile_update', array( $user_emitter, 'onProfileUpdate' ), 10, 1 );
 		add_action( 'deleted_user', array( $user_emitter, 'onDeletedUser' ), 10, 1 );
 
-		add_action( 'added_post_meta', array( $meta_emitter, 'onUpdatedPostMeta' ), 10, 4 );
-		add_action( 'updated_post_meta', array( $meta_emitter, 'onUpdatedPostMeta' ), 10, 4 );
 		add_action( 'deleted_post_meta', array( $meta_emitter, 'onDeletedPostMeta' ), 10, 4 );
-
-		add_action( 'added_term_meta', array( $meta_emitter, 'onUpdatedTermMeta' ), 10, 4 );
-		add_action( 'updated_term_meta', array( $meta_emitter, 'onUpdatedTermMeta' ), 10, 4 );
 		add_action( 'deleted_term_meta', array( $meta_emitter, 'onDeletedTermMeta' ), 10, 4 );
-
-		add_action( 'added_user_meta', array( $meta_emitter, 'onUpdatedUserMeta' ), 10, 4 );
-		add_action( 'updated_user_meta', array( $meta_emitter, 'onUpdatedUserMeta' ), 10, 4 );
 		add_action( 'deleted_user_meta', array( $meta_emitter, 'onDeletedUserMeta' ), 10, 4 );
 
 		add_filter(
 			'acf/update_value',
-			function ( $value, $object_id, $field ) use ( $meta_emitter ) {
+			function ( $value, $object_id, $field, $original ) use ( $meta_emitter ) {
 				[$entity, $id] = AcfUtil::parse_object_id( $object_id );
 
 				if ( null === $entity || null === $id ) {
 					return $value;
 				}
 
-				// Route all ACF updates through MetaEmitter which will emit meta-level webhooks
-				// when appropriate and also schedule the upstream entity-level update.
-				$meta_emitter->onAcfUpdate( $entity, (int) $id, is_array( $field ) ? $field : array() );
-
+				$meta_emitter->acf_update_handler( $entity, (int) $id, is_array( $field ) ? $field : array(), $value, $original );
 				return $value;
 			},
 			10,
-			3
+			4
 		);
+
+		// Add filters for all meta types with high priority to run late
+		add_filter( 'update_post_metadata', array( $meta_emitter, 'onUpdatedPostMeta' ), 999, 5 );
+		add_filter( 'update_term_metadata', array( $meta_emitter, 'onUpdatedTermMeta' ), 999, 5 );
+		add_filter( 'update_user_metadata', array( $meta_emitter, 'onUpdatedUserMeta' ), 999, 5 );
 	}
 }

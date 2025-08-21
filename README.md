@@ -45,9 +45,6 @@ Define these constants in your `wp-config.php` to configure webhook behavior:
 ```php
 // Webhook endpoint URL (required for basic setup)
 define('WP_WEBHOOK_FRAMEWORK_URL', 'https://example.com/webhook');
-
-// Enable meta webhooks (optional, default: false)
-define('WP_WEBHOOK_FRAMEWORK_EMIT_META_WEBHOOKS', true);
 ```
 
 **Note:** The `WP_WEBHOOK_FRAMEWORK_URL` constant is used as the default webhook endpoint when no URL is provided in the configuration.

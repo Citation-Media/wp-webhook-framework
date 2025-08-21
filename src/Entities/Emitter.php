@@ -10,7 +10,6 @@ declare(strict_types=1);
 namespace Citation\WP_Webhook_Framework\Entities;
 
 use Citation\WP_Webhook_Framework\Dispatcher;
-use Citation\WP_Webhook_Framework\Support\Payload;
 
 /**
  * Abstract base class for all webhook emitters.
@@ -45,17 +44,17 @@ abstract class Emitter {
 	 */
 	protected function schedule( string $action, string $entity_type, int|string $entity_id, array $payload ): void {
 
-		$url = "";
+		$url = '';
 		if (
-			defined('WP_WEBHOOK_FRAMEWORK_URL')
+			defined( 'WP_WEBHOOK_FRAMEWORK_URL' )
 			&& WP_WEBHOOK_FRAMEWORK_URL !== ''
-			&& is_string(WP_WEBHOOK_FRAMEWORK_URL)
+			&& is_string( WP_WEBHOOK_FRAMEWORK_URL )
 		) {
 			$url = WP_WEBHOOK_FRAMEWORK_URL;
 		}
 
 		$url = apply_filters(
-			"wp_webhook_framework_url",
+			'wp_webhook_framework_url',
 			$url,
 			$entity_type,
 			$entity_id,

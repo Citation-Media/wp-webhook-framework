@@ -39,7 +39,7 @@ class Dispatcher {
 				'group'                 => 'wpwf',
 				'status'                => ActionScheduler_Store::STATUS_PENDING,
 				'args'                  => array(
-					'url'   => $url,
+					'url'    => $url,
 					'action' => $action,
 					'entity' => $entity,
 					'id'     => $id,
@@ -56,7 +56,7 @@ class Dispatcher {
 			time() + 5,
 			'wpwf_send_webhook',
 			array(
-				'url' => $url,
+				'url'     => $url,
 				'action'  => $action,
 				'entity'  => $entity,
 				'id'      => $id,

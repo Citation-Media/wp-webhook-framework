@@ -58,13 +58,21 @@ class Meta extends Emitter {
 	/**
 	 * Handle post meta update event.
 	 *
-	 * @param int    $meta_id    The meta ID.
-	 * @param int    $object_id  The object ID.
-	 * @param string $meta_key   The meta key.
-	 * @param mixed  $meta_value The meta value.
+	 * @param bool|null $check      Whether to allow updating metadata for the given type.
+	 * @param int       $object_id  The object ID.
+	 * @param string    $meta_key   The meta key.
+	 * @param mixed     $meta_value The meta value.
+	 * @param mixed     $prev_value The previous value. Most likely not filled. Value has to be passed to update_metadata().
+	 * @return bool|null
 	 */
-	public function onUpdatedPostMeta( int $meta_id, int $object_id, string $meta_key, $meta_value ): void {
-		$this->handlePostMetaChange( $object_id, $meta_key, $meta_value );
+	public function onUpdatedPostMeta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
+
+		if ( empty( $prev_value ) ) {
+			$prev_value = get_post_meta( $object_id, $meta_key, true );
+		}
+
+		$this->onMetaUpdate( 'post', $object_id, $meta_key, $meta_value, $prev_value );
+		return $check;
 	}
 
 	/**
@@ -76,19 +84,27 @@ class Meta extends Emitter {
 	 * @param mixed  $meta_value The meta value.
 	 */
 	public function onDeletedPostMeta( $meta_ids, int $object_id, string $meta_key, $meta_value ): void {
-		$this->handlePostMetaChange( $object_id, $meta_key, $meta_value, true );
+		$this->onMetaUpdate( 'post', $object_id, $meta_key, $meta_value );
 	}
 
 	/**
 	 * Handle term meta update event.
 	 *
-	 * @param int    $meta_id    The meta ID.
-	 * @param int    $object_id  The object ID.
-	 * @param string $meta_key   The meta key.
-	 * @param mixed  $meta_value The meta value.
+	 * @param bool|null $check      Whether to allow updating metadata for the given type.
+	 * @param int       $object_id  The object ID.
+	 * @param string    $meta_key   The meta key.
+	 * @param mixed     $meta_value The meta value.
+	 * @param mixed     $prev_value The previous value. Most likely not filled. Value has to be passed to update_metadata().
+	 * @return bool|null
 	 */
-	public function onUpdatedTermMeta( int $meta_id, int $object_id, string $meta_key, $meta_value ): void {
-		$this->handleTermMetaChange( $object_id, $meta_key, $meta_value );
+	public function onUpdatedTermMeta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
+
+		if ( empty( $prev_value ) ) {
+			$prev_value = get_term_meta( $object_id, $meta_key, true );
+		}
+
+		$this->onMetaUpdate( 'term', $object_id, $meta_key, $meta_value, $prev_value );
+		return $check;
 	}
 
 	/**
@@ -100,19 +116,27 @@ class Meta extends Emitter {
 	 * @param mixed  $meta_value The meta value.
 	 */
 	public function onDeletedTermMeta( $meta_ids, int $object_id, string $meta_key, $meta_value ): void {
-		$this->handleTermMetaChange( $object_id, $meta_key, $meta_value, true );
+		$this->onMetaUpdate( 'term', $object_id, $meta_key, $meta_value );
 	}
 
 	/**
 	 * Handle user meta update event.
 	 *
-	 * @param int    $meta_id    The meta ID.
-	 * @param int    $object_id  The object ID.
-	 * @param string $meta_key   The meta key.
-	 * @param mixed  $meta_value The meta value.
+	 * @param bool|null $check      Whether to allow updating metadata for the given type.
+	 * @param int       $object_id  The object ID.
+	 * @param string    $meta_key   The meta key.
+	 * @param mixed     $meta_value The meta value.
+	 * @param mixed     $prev_value The previous value. Most likely not filled. Value has to be passed to update_metadata().
+	 * @return bool|null
 	 */
-	public function onUpdatedUserMeta( int $meta_id, int $object_id, string $meta_key, $meta_value ): void {
-		$this->handleUserMetaChange( $object_id, $meta_key, $meta_value );
+	public function onUpdatedUserMeta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
+
+		if ( empty( $prev_value ) ) {
+			$prev_value = get_user_meta( $object_id, $meta_key, true );
+		}
+
+		$this->onMetaUpdate( 'user', $object_id, $meta_key, $meta_value, $prev_value );
+		return $check;
 	}
 
 	/**
@@ -124,7 +148,33 @@ class Meta extends Emitter {
 	 * @param mixed  $meta_value The meta value.
 	 */
 	public function onDeletedUserMeta( $meta_ids, int $object_id, string $meta_key, $meta_value ): void {
-		$this->handleUserMetaChange( $object_id, $meta_key, $meta_value, true );
+		$this->onMetaUpdate( 'user', $object_id, $meta_key, $meta_value );
+	}
+
+	/**
+	 * Central handler for all metadata updates with automatic change and deletion detection.
+	 *
+	 * @param string $meta_type  The meta type (post, term, user).
+	 * @param int    $object_id  The object ID.
+	 * @param string $meta_key   The meta key.
+	 * @param mixed  $new_value  The new value.
+	 * @param mixed  $old_value  The old value.
+	 */
+	public function onMetaUpdate( string $meta_type, int $object_id, string $meta_key, mixed $new_value, mixed $old_value = null ): void {
+
+		// No change do nothing. Never compare strict!
+		if ( $new_value === $old_value ) {
+			return;
+		}
+
+		// Automatically detect if this is effectively a deletion
+		$is_deletion = $this->isDeletion( $new_value, $old_value );
+
+		// Emit meta-level webhook
+		$this->emit( $object_id, $is_deletion ? 'delete' : 'update', $meta_key, $this->getPayload( $meta_type, $object_id ) );
+
+		// Trigger upstream entity-level update
+		$this->triggerEntityUpdate( $meta_type, $object_id );
 	}
 
 	/**
@@ -132,79 +182,83 @@ class Meta extends Emitter {
 	 * MetaEmitter will decide whether to emit a meta-level webhook and will also trigger
 	 * the upstream entity-level update.
 	 *
-	 * @param string              $entity The entity type.
-	 * @param int                 $id     The entity ID.
-	 * @param array<string,mixed> $field  The field data.
+	 * @param string              $entity   The entity type.
+	 * @param int                 $id       The entity ID.
+	 * @param array<string,mixed> $field    The field data.
+	 * @param mixed               $value    The new value.
+	 * @param mixed               $original The original value.
 	 */
-	public function onAcfUpdate( string $entity, int $id, array $field ): void {
-		if ( 'post' === $entity ) {
-			$this->handlePostMetaChange( $id, $field['name'] );
-			return;
-		}
+	public function acf_update_handler( string $entity, int $id, array $field, $value = null, $original = null ): void {
+		$this->onMetaUpdate( $entity, $id, $field['name'], $value, $original );
+	}
 
-		if ( 'term' === $entity ) {
-			$this->handleTermMetaChange( $id, $field['name'] );
-			return;
-		}
 
-		if ( 'user' === $entity ) {
-			$this->handleUserMetaChange( $id, $field['name'] );
-			return;
+
+	/**
+	 * Determine if a metadata update represents a deletion.
+	 *
+	 * @param mixed $new_value The new value.
+	 * @param mixed $old_value The old value.
+	 * @return bool True if this represents a deletion.
+	 */
+	private function isDeletion( $new_value, $old_value ): bool {
+		// If new value is empty/null and old value existed, it's a deletion
+		return empty( $new_value ) && ! empty( $old_value );
+	}
+
+	/**
+	 * Get the appropriate payload for the meta type.
+	 *
+	 * @param string $meta_type The meta type.
+	 * @param int    $object_id The object ID.
+	 * @return array<string,mixed> The payload data.
+	 */
+	private function getPayload( string $meta_type, int $object_id ): array {
+		switch ( $meta_type ) {
+			case 'post':
+				return Payload::post( $object_id );
+			case 'term':
+				return Payload::term( $object_id );
+			case 'user':
+				return Payload::user( $object_id );
+			default:
+				return array();
 		}
 	}
 
 	/**
-	 * Handle post meta change.
+	 * Trigger the appropriate entity-level update.
 	 *
-	 * @param int    $post_id    The post ID.
-	 * @param string $meta_key   The meta key.
-	 * @param mixed  $meta_value The meta value.
-	 * @param bool   $deleted    Whether the meta was deleted.
+	 * @param string $meta_type The meta type.
+	 * @param int    $object_id The object ID.
 	 */
-	private function handlePostMetaChange( int $post_id, string $meta_key, $meta_value = null, bool $deleted = false ): void {
-		$this->emit( $post_id, $deleted ? 'delete' : 'update', $meta_key, Payload::post( $post_id ) );
-		$this->post_emitter->emit( $post_id, 'update' );
-	}
-
-	/**
-	 * Handle term meta change.
-	 *
-	 * @param int    $term_id    The term ID.
-	 * @param string $meta_key   The meta key.
-	 * @param mixed  $meta_value The meta value.
-	 * @param bool   $deleted    Whether the meta was deleted.
-	 */
-	private function handleTermMetaChange( int $term_id, string $meta_key, $meta_value = null, bool $deleted = false ): void {
-		$this->emit( $term_id, $deleted ? 'delete' : 'update', $meta_key, Payload::term( $term_id ) );
-		$this->term_emitter->emit( $term_id, 'update' );
-	}
-
-	/**
-	 * Handle user meta change.
-	 *
-	 * @param int    $user_id    The user ID.
-	 * @param string $meta_key   The meta key.
-	 * @param mixed  $meta_value The meta value.
-	 * @param bool   $deleted    Whether the meta was deleted.
-	 */
-	private function handleUserMetaChange( int $user_id, string $meta_key, $meta_value = null, bool $deleted = false ): void {
-		$this->emit( $user_id, $deleted ? 'delete' : 'update', $meta_key, Payload::user( $user_id ) );
-		$this->user_emitter->emit( $user_id, 'update' );
+	private function triggerEntityUpdate( string $meta_type, int $object_id ): void {
+		switch ( $meta_type ) {
+			case 'post':
+				$this->post_emitter->emit( $object_id, 'update' );
+				break;
+			case 'term':
+				$this->term_emitter->emit( $object_id, 'update' );
+				break;
+			case 'user':
+				$this->user_emitter->emit( $object_id, 'update' );
+				break;
+		}
 	}
 
 	/**
 	 * Emit a webhook for a meta action.
 	 *
-	 * @param int                 $user_id The entity ID.
-	 * @param string              $action  The action performed.
-	 * @param string              $meta_key The meta key.
-	 * @param array<string,mixed> $payload The payload data.
+	 * @param int                 $entity_id The entity ID.
+	 * @param string              $action    The action performed.
+	 * @param string              $meta_key  The meta key.
+	 * @param array<string,mixed> $payload   The payload data.
 	 */
-	public function emit( int $user_id, string $action, string $meta_key, array $payload = array() ): void {
+	public function emit( int $entity_id, string $action, string $meta_key, array $payload = array() ): void {
 		$this->schedule(
 			$action,
 			'meta',
-			$user_id,
+			$entity_id,
 			array_merge(
 				$payload,
 				array( 'meta_key' => $meta_key )

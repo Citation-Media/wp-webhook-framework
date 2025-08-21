@@ -19,14 +19,38 @@ composer require citation-media/wp-webhook-framework
 Ensure Action Scheduler is active (dependency is declared).
 
 ## Usage
+
+### Basic Setup
 ```php
-$provider = new \CitationMedia\WpWebhookFramework\ServiceProvider([
-  'webhook_url'  => 'https://example.com/webhook',
-  'hook_group'   => 'wpwf',
-  'process_hook' => 'wpwf_send_webhook',
-]);
-$provider->register();
+// Initialize the webhook framework
+\Citation\WP_Webhook_Framework\ServiceProvider::register();
 ```
+
+### Singleton Pattern
+
+The ServiceProvider uses the singleton pattern to ensure only one instance is created and shared across your application. This prevents duplicate hook registrations and ensures consistent configuration.
+
+```php
+// Get the singleton instance
+$provider = \Citation\WP_Webhook_Framework\ServiceProvider::get_instance();
+
+// The same instance is returned on subsequent calls
+$sameProvider = \Citation\WP_Webhook_Framework\ServiceProvider::get_instance();
+```
+
+### Configuration Constants
+
+Define these constants in your `wp-config.php` to configure webhook behavior:
+
+```php
+// Webhook endpoint URL (required for basic setup)
+define('WP_WEBHOOK_FRAMEWORK_URL', 'https://example.com/webhook');
+
+// Enable meta webhooks (optional, default: false)
+define('WP_WEBHOOK_FRAMEWORK_EMIT_META_WEBHOOKS', true);
+```
+
+**Note:** The `WP_WEBHOOK_FRAMEWORK_URL` constant is used as the default webhook endpoint when no URL is provided in the configuration.
 
 ## Payload Filtering
 

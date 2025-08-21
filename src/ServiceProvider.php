@@ -21,6 +21,13 @@ use Citation\WP_Webhook_Framework\Support\AcfUtil;
 class ServiceProvider {
 
 	/**
+	 * Singleton instance.
+	 *
+	 * @var ServiceProvider|null
+	 */
+	private static ?ServiceProvider $instance = null;
+
+	/**
 	 * The webhook dispatcher instance.
 	 *
 	 * @var Dispatcher
@@ -28,13 +35,25 @@ class ServiceProvider {
 	private Dispatcher $dispatcher;
 
 	/**
-	 * Constructor for ServiceProvider.
+	 * Private constructor to prevent direct instantiation.
 	 *
-	 * @param array{webhook_url?:string|null,hook_group?:string,process_hook?:string} $config     Configuration array.
 	 * @param Dispatcher|null                                                         $dispatcher Optional dispatcher instance.
 	 */
-	public function __construct( array $config = array(), ?Dispatcher $dispatcher = null ) {
+	private function __construct( ?Dispatcher $dispatcher = null ) {
 		$this->dispatcher = $dispatcher ?: new Dispatcher();
+	}
+
+	/**
+	 * Get singleton instance.
+	 *
+	 * @param Dispatcher|null                                                         $dispatcher Optional dispatcher instance.
+	 * @return ServiceProvider
+	 */
+	public static function get_instance( ?Dispatcher $dispatcher = null ): ServiceProvider {
+		if ( null === self::$instance ) {
+			self::$instance = new self( $dispatcher );
+		}
+		return self::$instance;
 	}
 
 	/**
@@ -42,14 +61,13 @@ class ServiceProvider {
 	 */
 	public static function register(): void {
 
-		$instance = new self();
-		$instance->dispatcher = new Dispatcher();
+		$instance = self::get_instance();
 
 		add_action(
 			'wpwf_send_webhook',
 			array( $instance->dispatcher, 'process_scheduled_webhook' ),
 			10,
-			5
+			4
 		);
 
 		$post_emitter = new Post( $instance->dispatcher );

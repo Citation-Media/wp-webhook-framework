@@ -20,15 +20,49 @@ class Dispatcher {
 	/**
 	 * Schedule a webhook if not already pending with same (action, entity, id).
 	 *
-	 * @param string              $url     The webhook URL.
 	 * @param string              $action The action type.
 	 * @param string              $entity The entity type.
 	 * @param int|string          $id The entity ID.
 	 * @param array<string,mixed> $payload The payload data.
 	 */
-	public function schedule( string $url, string $action, string $entity, int|string $id, array $payload = array() ): void {
+	public function schedule( string $action, string $entity, int|string $id, array $payload = array() ): void {
 
 		if ( ! function_exists( 'as_schedule_single_action' ) || ! function_exists( 'as_get_scheduled_actions' ) ) {
+			return;
+		}
+
+		$url = '';
+		if (
+			defined( 'WP_WEBHOOK_FRAMEWORK_URL' )
+			&& WP_WEBHOOK_FRAMEWORK_URL !== ''
+			&& is_string( WP_WEBHOOK_FRAMEWORK_URL )
+		) {
+			$url = WP_WEBHOOK_FRAMEWORK_URL;
+		}
+
+		$url = apply_filters(
+			'wpwf_url',
+			$url,
+			$entity,
+			$id,
+			$action,
+			$payload
+		);
+
+		if ( empty( $url ) ) {
+			return; // No URL provided, nothing to schedule.
+		}
+
+		// Apply filter to allow modification of the payload
+		$filtered_payload = apply_filters(
+			'wpwf_payload',
+			$payload,
+			$entity,
+			$action
+		);
+
+		// If the filtered payload is empty, don't schedule the webhook
+		if ( empty( $filtered_payload ) ) {
 			return;
 		}
 

@@ -43,38 +43,46 @@ $sameProvider = \Citation\WP_Webhook_Framework\ServiceProvider::get_instance();
 Define these constants in your `wp-config.php` to configure webhook behavior:
 
 ```php
-// Webhook endpoint URL (required for basic setup)
+// Webhook endpoint URL (optional - can be overridden by wpwf_url filter)
 define('WP_WEBHOOK_FRAMEWORK_URL', 'https://example.com/webhook');
 ```
 
-**Note:** The `WP_WEBHOOK_FRAMEWORK_URL` constant is used as the default webhook endpoint when no URL is provided in the configuration.
+**Note:** The `WP_WEBHOOK_FRAMEWORK_URL` constant provides a default webhook endpoint, but can be overridden using the `wpwf_url` filter for more granular control.
 
 ## Payload Filtering
 
 Control webhook payloads and delivery using WordPress filters. Each entity type has its own filter:
 
 ### Available Filters
-- `wp_webhook_framework_post_payload` - Filter post webhook payloads
-- `wp_webhook_framework_term_payload` - Filter term webhook payloads
-- `wp_webhook_framework_user_payload` - Filter user webhook payloads
-- `wp_webhook_framework_meta_payload` - Filter meta webhook payloads
+- `wpwf_payload` - Filter webhook payloads
+- `wpwf_url` - Filter webhook url
 
 ### Filter Signature
 ```php
-add_filter('wp_webhook_framework_post_payload', function($payload, $entity_id, $action) {
+add_filter('wpwf_payload', function($payload, $entity, $action) {
     // $payload: array - The webhook payload data
-    // $entity_id: int|string - The entity ID
+    // $entity: string - The entity type (post, term, user, meta)
     // $action: string - The action (create/update/delete)
 
     return $payload; // Return modified payload or empty array to prevent webhook
 }, 10, 3);
+
+add_filter('wpwf_url', function($url, $entity, $id, $action, $payload) {
+    // $url: string - The webhook URL
+    // $entity: string - The entity type
+    // $id: int|string - The entity ID
+    // $action: string - The action (create/update/delete)
+    // $payload: array - The webhook payload data
+
+    return $url; // Return modified URL
+}, 10, 5);
 ```
 
 ### Filter Examples
 
 **Prevent delete webhooks:**
 ```php
-add_filter('wp_webhook_framework_post_payload', function($payload, $post_id, $action) {
+add_filter('wpwf_payload', function($payload, $entity, $action) {
     if ($action === 'delete') {
         return array(); // Return empty array to prevent webhook
     }
@@ -84,23 +92,26 @@ add_filter('wp_webhook_framework_post_payload', function($payload, $post_id, $ac
 
 **Add custom data to user webhooks:**
 ```php
-add_filter('wp_webhook_framework_user_payload', function($payload, $user_id, $action) {
-    $user = get_userdata($user_id);
-    $payload['email'] = $user->user_email;
-    $payload['display_name'] = $user->display_name;
+add_filter('wpwf_payload', function($payload, $entity, $action) {
+    if ($entity === 'user') {
+        $user = get_userdata($payload['id']);
+        $payload['email'] = $user->user_email;
+        $payload['display_name'] = $user->display_name;
+    }
     return $payload;
 }, 10, 3);
 ```
 
-**Filter by post type:**
+**Set custom webhook URL based on entity type:**
 ```php
-add_filter('wp_webhook_framework_post_payload', function($payload, $post_id, $action) {
-    $post_type = get_post_type($post_id);
-    if ($post_type !== 'post') {
-        return array(); // Only send webhooks for 'post' type
+add_filter('wpwf_url', function($url, $entity, $id, $action, $payload) {
+    if ($entity === 'post') {
+        return 'https://api.example.com/webhooks/posts';
+    } elseif ($entity === 'user') {
+        return 'https://api.example.com/webhooks/users';
     }
-    return $payload;
-}, 10, 3);
+    return $url;
+}, 10, 5);
 ```
 
 Example payload:
@@ -112,3 +123,5 @@ Example payload:
   "post_type": "post"
 }
 ```
+
+The payload includes the entity data plus the action, entity type, and ID added by the framework.

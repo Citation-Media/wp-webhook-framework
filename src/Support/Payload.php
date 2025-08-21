@@ -26,8 +26,12 @@ class Payload {
 		$payload   = array( 'post_type' => $post_type );
 
 		// Add REST API URL if post type has REST support enabled
-		if ( self::post_type_supports_rest( $post_type ) ) {
-			$payload['rest_url'] = self::get_post_rest_url( $post_id, $post_type );
+		if ( false !== $post_type ) {
+			$post_type_object = get_post_type_object( $post_type );
+			if ( $post_type_object && $post_type_object->show_in_rest && $post_type_object->rest_base ) {
+				$rest_namespace = $post_type_object->rest_namespace ?: 'wp/v2';
+				$payload['rest_url'] = rest_url( "{$rest_namespace}/{$post_type_object->rest_base}/{$post_id}" );
+			}
 		}
 
 		return $payload;
@@ -51,8 +55,9 @@ class Payload {
 		$payload  = array( 'taxonomy' => $taxonomy );
 
 		// Add REST API URL if taxonomy has REST support enabled
-		if ( self::taxonomy_supports_rest( $taxonomy ) ) {
-			$payload['rest_url'] = self::get_term_rest_url( $term_id, $taxonomy );
+		$taxonomy_object = get_taxonomy( $taxonomy );
+		if ( $taxonomy_object && $taxonomy_object->show_in_rest && $taxonomy_object->rest_base ) {
+			$payload['rest_url'] = rest_url( "wp/v2/{$taxonomy_object->rest_base}/{$term_id}" );
 		}
 
 		return $payload;
@@ -70,107 +75,11 @@ class Payload {
 		$payload = array( 'roles' => $roles );
 
 		// Add REST API URL if users endpoint has REST support enabled
-		if ( self::users_support_rest() ) {
-			$payload['rest_url'] = self::get_user_rest_url( $user_id );
+		if ( class_exists( 'WP_REST_Users_Controller' ) ) {
+			$payload['rest_url'] = rest_url( "wp/v2/users/{$user_id}" );
 		}
 
 		return $payload;
 	}
 
-	/**
-	 * Check if a post type supports REST API.
-	 *
-	 * @param string|false $post_type The post type to check.
-	 * @return bool Whether the post type supports REST API.
-	 */
-	private static function post_type_supports_rest( $post_type ): bool {
-		if ( false === $post_type ) {
-			return false;
-		}
-
-		$post_type_object = get_post_type_object( $post_type );
-		return $post_type_object && $post_type_object->show_in_rest;
-	}
-
-	/**
-	 * Check if a taxonomy supports REST API.
-	 *
-	 * @param string $taxonomy The taxonomy to check.
-	 * @return bool Whether the taxonomy supports REST API.
-	 */
-	private static function taxonomy_supports_rest( string $taxonomy ): bool {
-		$taxonomy_object = get_taxonomy( $taxonomy );
-		return $taxonomy_object && $taxonomy_object->show_in_rest;
-	}
-
-	/**
-	 * Check if users endpoint supports REST API.
-	 *
-	 * @return bool Whether users support REST API.
-	 */
-	private static function users_support_rest(): bool {
-		// Users REST API is enabled by default in WordPress but can be disabled
-		// Check if the WP_REST_Users_Controller is available
-		return class_exists( 'WP_REST_Users_Controller' );
-	}
-
-	/**
-	 * Generate REST API URL for a post.
-	 *
-	 * @param int          $post_id   The post ID.
-	 * @param string|false $post_type The post type.
-	 * @return string The REST API URL for the post.
-	 */
-	private static function get_post_rest_url( int $post_id, $post_type ): string {
-		if ( false === $post_type ) {
-			return '';
-		}
-
-		$post_type_object = get_post_type_object( $post_type );
-		if ( ! $post_type_object ) {
-			return '';
-		}
-
-		if ( $post_type_object->rest_base ) {
-			$rest_base = $post_type_object->rest_base;
-		} else {
-			// Fallback to default REST base if not explicitly set
-			$rest_base = 'post' === $post_type ? 'posts' : $post_type;
-		}
-
-		return rest_url( "wp/v2/{$rest_base}/{$post_id}" );
-	}
-
-	/**
-	 * Generate REST API URL for a term.
-	 *
-	 * @param int    $term_id  The term ID.
-	 * @param string $taxonomy The taxonomy name.
-	 * @return string The REST API URL for the term.
-	 */
-	private static function get_term_rest_url( int $term_id, string $taxonomy ): string {
-		$taxonomy_object = get_taxonomy( $taxonomy );
-		if ( ! $taxonomy_object ) {
-			return '';
-		}
-
-		if ( $taxonomy_object->rest_base ) {
-			$rest_base = $taxonomy_object->rest_base;
-		} else {
-			// Fallback to taxonomy name if rest_base not set
-			$rest_base = $taxonomy;
-		}
-
-		return rest_url( "wp/v2/{$rest_base}/{$term_id}" );
-	}
-
-	/**
-	 * Generate REST API URL for a user.
-	 *
-	 * @param int $user_id The user ID.
-	 * @return string The REST API URL for the user.
-	 */
-	private static function get_user_rest_url( int $user_id ): string {
-		return rest_url( "wp/v2/users/{$user_id}" );
-	}
 }

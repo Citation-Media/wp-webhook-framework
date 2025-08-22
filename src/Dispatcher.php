@@ -102,19 +102,32 @@ class Dispatcher {
 	}
 
 	/**
-	 * Action Scheduler callback. Sends the POST request non-blocking.
+	 * Action Scheduler callback. Sends the POST request and throws WP_Exception on failure.
+	 *
+	 * This method throws WP_Exception upon webhook delivery failure to enable Action Scheduler
+	 * to properly catch and handle the exception. This provides better visibility into failure
+	 * reasons within Action Scheduler's logging and retry mechanisms, improving transparency
+	 * and debugging capabilities for webhook processing errors.
 	 *
 	 * @param string              $url The webhook URL.
 	 * @param string              $action The action type.
 	 * @param string              $entity The entity type.
 	 * @param int|string          $id The entity ID.
 	 * @param array<string,mixed> $payload The payload data.
+	 *
+	 * @throws WP_Exception When webhook delivery fails or URL is blocked.
 	 */
 	public function process_scheduled_webhook( string $url, string $action, string $entity, $id, array $payload ): void {
 
 		// Check if this URL is blocked due to too many failures
 		if ( $this->is_url_blocked( $url ) ) {
-			return;
+			throw new WP_Exception(
+				sprintf(
+					/* translators: %s: webhook URL */
+					__( 'Webhook URL is blocked due to consecutive failures: %s', 'wp-webhook-framework' ),
+					$url
+				)
+			);
 		}
 
 		$body = array_merge(
@@ -137,10 +150,27 @@ class Dispatcher {
 
 		// Check if the request was successful
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			// Track the failure for internal monitoring and blocking logic
 			$this->handle_webhook_failure( $url, $response );
-		} else {
-			$this->handle_webhook_success( $url );
+
+			// Throw WP_Exception to signal failure to Action Scheduler
+			// This allows Action Scheduler to catch the exception and handle it appropriately,
+			// providing better failure tracking and retry logic within the scheduler itself.
+			$error_message = $this->get_failure_error_message( $response );
+			throw new WP_Exception(
+				sprintf(
+					/* translators: 1: webhook URL, 2: action, 3: entity, 4: ID, 5: error message */
+					__( 'Webhook delivery failed for URL %1$s (action: %2$s, entity: %3$s, ID: %4$s): %5$s', 'wp-webhook-framework' ),
+					$url,
+					$action,
+					$entity,
+					$id,
+					$error_message
+				)
+			);
 		}
+
+		$this->handle_webhook_success( $url );
 	}
 
 	/**
@@ -175,6 +205,25 @@ class Dispatcher {
 		if ( $failure_dto->get_count() > 10 && ! $failure_dto->is_blocked() ) {
 			$this->block_url( $url );
 		}
+	}
+
+	/**
+	 * Get error message from webhook failure response.
+	 *
+	 * @param mixed $response The response from wp_remote_post.
+	 * @return string The error message.
+	 */
+	private function get_failure_error_message( $response ): string {
+		if ( is_wp_error( $response ) ) {
+			return $response->get_error_message();
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+		return sprintf(
+			/* translators: %d: HTTP status code */
+			__( 'HTTP Status Code: %d', 'wp-webhook-framework' ),
+			$status_code
+		);
 	}
 
 	/**

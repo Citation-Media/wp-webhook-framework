@@ -130,10 +130,10 @@ class ServiceProvider {
 	 */
 	private function register_legacy(): void {
 
-		$post_emitter = new Post( $instance->dispatcher );
-		$term_emitter = new Term( $instance->dispatcher );
-		$user_emitter = new User( $instance->dispatcher );
-		$meta_emitter = new Meta( $instance->dispatcher, $post_emitter, $term_emitter, $user_emitter );
+		$post_emitter = new Post( $this->dispatcher );
+		$term_emitter = new Term( $this->dispatcher );
+		$user_emitter = new User( $this->dispatcher );
+		$meta_emitter = new Meta( $this->dispatcher, $post_emitter, $term_emitter, $user_emitter );
 
 		add_action( 'save_post', array( $post_emitter, 'on_save_post' ), 10, 3 );
 		add_action( 'before_delete_post', array( $post_emitter, 'on_delete_post' ), 10, 1 );

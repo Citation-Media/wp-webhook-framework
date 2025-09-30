@@ -11,6 +11,11 @@ Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking P
   - User: roles[]
 - ACF-aware (adds acf_field_key/name)
 - Payload filtering system for custom webhook control
+- **Registry pattern for third-party extensibility:**
+  - Configurable webhook instances with retry policies
+  - Custom timeouts and HTTP headers per webhook
+  - Third-party plugin integration via `wpwf_register_webhooks` action
+  - Backwards compatible with legacy direct instantiation
 - **Failure monitoring and blocking:**
   - Email notifications for failed deliveries (non-200 responses)
   - Automatic blocking after 10 consecutive failures within 1 hour
@@ -28,8 +33,77 @@ Ensure Action Scheduler is active (dependency is declared).
 
 ### Basic Setup
 ```php
-// Initialize the webhook framework
+// Initialize the webhook framework (uses registry pattern by default)
 \Citation\WP_Webhook_Framework\ServiceProvider::register();
+
+// Legacy mode for backwards compatibility
+\Citation\WP_Webhook_Framework\ServiceProvider::register(false);
+```
+
+### Registry Pattern (Recommended)
+
+The framework now uses a registry pattern for enhanced third-party extensibility and webhook configuration.
+
+#### Basic Configuration
+```php
+// Get the registry instance
+$registry = \Citation\WP_Webhook_Framework\ServiceProvider::get_registry();
+
+// Access and configure existing webhooks
+$post_webhook = $registry->get('post');
+if ($post_webhook) {
+    $post_webhook->allowed_retries(5)
+                 ->timeout(60)
+                 ->webhook_url('https://api.example.com/posts');
+}
+```
+
+#### Creating Custom Webhooks
+```php
+class CustomWebhook extends \Citation\WP_Webhook_Framework\Webhook {
+    
+    public function __construct() {
+        parent::__construct('my_custom_webhook');
+        
+        // Configure webhook behavior
+        $this->allowed_retries(3)
+             ->timeout(30)
+             ->webhook_url('https://api.example.com/custom')
+             ->headers(['Authorization' => 'Bearer token123']);
+    }
+    
+    public function init(): void {
+        if (!$this->is_enabled()) {
+            return;
+        }
+        
+        // Register WordPress hooks
+        add_action('my_custom_action', [$this, 'handle_action'], 10, 1);
+    }
+    
+    public function handle_action($data): void {
+        $registry = \Citation\WP_Webhook_Framework\WebhookRegistry::instance();
+        $dispatcher = $registry->get_dispatcher();
+        
+        $payload = ['custom_data' => $data, 'timestamp' => time()];
+        $dispatcher->schedule('action_triggered', 'custom', $data['id'], $payload);
+    }
+}
+
+// Register your custom webhook
+function register_my_webhooks($registry) {
+    $registry->register(new CustomWebhook());
+}
+add_action('wpwf_register_webhooks', 'register_my_webhooks');
+```
+
+#### Available Configuration Methods
+```php
+$webhook->allowed_retries(5)      // Set retry attempts (0-10)
+        ->timeout(60)             // Set timeout in seconds (1-300)
+        ->enabled(true)           // Enable/disable webhook
+        ->webhook_url('https://...') // Custom URL for this webhook
+        ->headers(['key' => 'val']); // Additional HTTP headers
 ```
 
 ### Singleton Pattern
@@ -42,6 +116,65 @@ $provider = \Citation\WP_Webhook_Framework\ServiceProvider::get_instance();
 
 // The same instance is returned on subsequent calls
 $sameProvider = \Citation\WP_Webhook_Framework\ServiceProvider::get_instance();
+```
+
+## Third-Party Integration
+
+The registry pattern enables seamless integration with third-party plugins and custom functionality.
+
+### Integration Hook
+```php
+/**
+ * Register custom webhooks with the framework.
+ *
+ * @param \Citation\WP_Webhook_Framework\WebhookRegistry $registry
+ */
+function my_plugin_register_webhooks($registry) {
+    // Register custom webhooks here
+    $registry->register(new MyCustomWebhook());
+}
+add_action('wpwf_register_webhooks', 'my_plugin_register_webhooks');
+```
+
+### Example: WooCommerce Integration
+```php
+class WooCommerceOrderWebhook extends \Citation\WP_Webhook_Framework\Webhook {
+    
+    public function __construct() {
+        parent::__construct('woocommerce_orders');
+        
+        $this->allowed_retries(3)
+             ->timeout(45)
+             ->webhook_url('https://api.example.com/woocommerce/orders')
+             ->headers(['X-WooCommerce-Webhook' => 'order-events']);
+    }
+    
+    public function init(): void {
+        add_action('woocommerce_new_order', [$this, 'on_new_order']);
+        add_action('woocommerce_order_status_changed', [$this, 'on_status_changed'], 10, 4);
+    }
+    
+    public function on_new_order($order_id): void {
+        $registry = \Citation\WP_Webhook_Framework\WebhookRegistry::instance();
+        $dispatcher = $registry->get_dispatcher();
+        
+        $payload = ['order_id' => $order_id, 'timestamp' => time()];
+        $dispatcher->schedule('created', 'woocommerce_order', $order_id, $payload);
+    }
+    
+    public function on_status_changed($order_id, $old_status, $new_status, $order): void {
+        $registry = \Citation\WP_Webhook_Framework\WebhookRegistry::instance();
+        $dispatcher = $registry->get_dispatcher();
+        
+        $payload = [
+            'order_id' => $order_id,
+            'old_status' => $old_status,
+            'new_status' => $new_status,
+            'timestamp' => time()
+        ];
+        $dispatcher->schedule('status_changed', 'woocommerce_order', $order_id, $payload);
+    }
+}
 ```
 
 ### Configuration Constants

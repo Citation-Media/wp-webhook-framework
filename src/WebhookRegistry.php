@@ -65,6 +65,7 @@ class WebhookRegistry {
 	 *
 	 * @param Webhook $webhook The webhook instance to register.
 	 * @return static
+	 * @phpstan-return static
 	 *
 	 * @throws \InvalidArgumentException If webhook name is already registered.
 	 */
@@ -92,6 +93,7 @@ class WebhookRegistry {
 	 *
 	 * @param string $name The webhook name.
 	 * @return Webhook|null
+	 * @phpstan-param non-empty-string $name
 	 */
 	public function get( string $name ): ?Webhook {
 		return $this->webhooks[ $name ] ?? null;
@@ -101,6 +103,7 @@ class WebhookRegistry {
 	 * Get all registered webhooks.
 	 *
 	 * @return array<string,Webhook>
+	 * @phpstan-return array<non-empty-string,Webhook>
 	 */
 	public function get_all(): array {
 		return $this->webhooks;
@@ -110,6 +113,7 @@ class WebhookRegistry {
 	 * Get all enabled webhooks.
 	 *
 	 * @return array<string,Webhook>
+	 * @phpstan-return array<non-empty-string,Webhook>
 	 */
 	public function get_enabled(): array {
 		return array_filter(
@@ -125,6 +129,7 @@ class WebhookRegistry {
 	 *
 	 * @param string $name The webhook name.
 	 * @return bool
+	 * @phpstan-param non-empty-string $name
 	 */
 	public function has( string $name ): bool {
 		return isset( $this->webhooks[ $name ] );
@@ -135,6 +140,7 @@ class WebhookRegistry {
 	 *
 	 * @param string $name The webhook name.
 	 * @return bool True if webhook was found and removed, false otherwise.
+	 * @phpstan-param non-empty-string $name
 	 */
 	public function unregister( string $name ): bool {
 		if ( isset( $this->webhooks[ $name ] ) ) {
@@ -169,6 +175,8 @@ class WebhookRegistry {
 	 *
 	 * @param string $name The webhook name.
 	 * @return array<string,mixed>|null
+	 * @phpstan-param non-empty-string $name
+	 * @phpstan-return array{name: string, allowed_retries: int, timeout: int, enabled: bool, webhook_url: string|null, headers: array<string,string>}|null
 	 */
 	public function get_config( string $name ): ?array {
 		$webhook = $this->get( $name );
@@ -179,6 +187,7 @@ class WebhookRegistry {
 	 * Get all webhook configurations.
 	 *
 	 * @return array<string,array<string,mixed>>
+	 * @phpstan-return array<non-empty-string,array{name: string, allowed_retries: int, timeout: int, enabled: bool, webhook_url: string|null, headers: array<string,string>}>
 	 */
 	public function get_all_configs(): array {
 		$configs = array();
@@ -197,6 +206,9 @@ class WebhookRegistry {
 	 * @param array<string,mixed> $args    Original HTTP request arguments.
 	 * @param string              $webhook_name The webhook name.
 	 * @return array<string,mixed> Modified arguments.
+	 * @phpstan-param array<string,mixed> $args
+	 * @phpstan-param non-empty-string $webhook_name
+	 * @phpstan-return array<string,mixed>
 	 */
 	public function apply_webhook_config( array $args, string $webhook_name ): array {
 		$webhook = $this->get( $webhook_name );

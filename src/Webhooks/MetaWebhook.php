@@ -36,6 +36,7 @@ class MetaWebhook extends Webhook {
 	 * Constructor.
 	 *
 	 * @param string $name The webhook name.
+	 * @phpstan-param non-empty-string $name
 	 */
 	public function __construct( string $name = 'meta' ) {
 		parent::__construct( $name );

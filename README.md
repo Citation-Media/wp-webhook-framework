@@ -15,7 +15,7 @@ Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking P
   - Configurable webhook instances with retry policies
   - Custom timeouts and HTTP headers per webhook
   - Third-party plugin integration via `wpwf_register_webhooks` action
-  - Backwards compatible with legacy direct instantiation
+  - Strong typing with PHPStan annotations for better code quality
 - **Failure monitoring and blocking:**
   - Email notifications for failed deliveries (non-200 responses)
   - Automatic blocking after 10 consecutive failures within 1 hour
@@ -33,16 +33,13 @@ Ensure Action Scheduler is active (dependency is declared).
 
 ### Basic Setup
 ```php
-// Initialize the webhook framework (uses registry pattern by default)
+// Initialize the webhook framework using the registry pattern
 \Citation\WP_Webhook_Framework\ServiceProvider::register();
-
-// Legacy mode for backwards compatibility
-\Citation\WP_Webhook_Framework\ServiceProvider::register(false);
 ```
 
-### Registry Pattern (Recommended)
+### Registry Pattern
 
-The framework now uses a registry pattern for enhanced third-party extensibility and webhook configuration.
+The framework uses a registry pattern for enhanced third-party extensibility and webhook configuration.
 
 #### Basic Configuration
 ```php

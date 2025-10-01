@@ -20,8 +20,7 @@ use Citation\WP_Webhook_Framework\Webhooks\MetaWebhook;
 /**
  * Class ServiceProvider
  *
- * Registers WordPress hooks and wires emitters to the dispatcher.
- * Supports both the new registry pattern and legacy direct instantiation.
+ * Registers WordPress hooks and wires emitters to the dispatcher using the registry pattern.
  */
 class ServiceProvider {
 
@@ -47,21 +46,12 @@ class ServiceProvider {
 	private WebhookRegistry $registry;
 
 	/**
-	 * Whether to use registry pattern (default: true).
-	 *
-	 * @var bool
-	 */
-	private bool $use_registry = true;
-
-	/**
 	 * Private constructor to prevent direct instantiation.
 	 *
 	 * @param Dispatcher|null $dispatcher Optional dispatcher instance.
-	 * @param bool            $use_registry Whether to use registry pattern.
 	 */
-	private function __construct( ?Dispatcher $dispatcher = null, bool $use_registry = true ) {
+	private function __construct( ?Dispatcher $dispatcher = null ) {
 		$this->dispatcher = $dispatcher ?: new Dispatcher();
-		$this->use_registry = $use_registry;
 		$this->registry = WebhookRegistry::instance( $this->dispatcher );
 	}
 
@@ -69,24 +59,21 @@ class ServiceProvider {
 	 * Get singleton instance.
 	 *
 	 * @param Dispatcher|null $dispatcher Optional dispatcher instance.
-	 * @param bool            $use_registry Whether to use registry pattern.
 	 * @return ServiceProvider
 	 */
-	private static function get_instance( ?Dispatcher $dispatcher = null, bool $use_registry = true ): ServiceProvider {
+	private static function get_instance( ?Dispatcher $dispatcher = null ): ServiceProvider {
 		if ( null === self::$instance ) {
-			self::$instance = new self( $dispatcher, $use_registry );
+			self::$instance = new self( $dispatcher );
 		}
 		return self::$instance;
 	}
 
 	/**
 	 * Registers all actions/filters. Safe to call multiple times.
-	 *
-	 * @param bool $use_registry Whether to use the new registry pattern (default: true).
 	 */
-	public static function register( bool $use_registry = true ): void {
+	public static function register(): void {
 
-		$instance = self::get_instance( null, $use_registry );
+		$instance = self::get_instance();
 
 		add_action(
 			'wpwf_send_webhook',
@@ -95,17 +82,13 @@ class ServiceProvider {
 			5
 		);
 
-		if ( $instance->use_registry ) {
-			$instance->register_with_registry();
-		} else {
-			$instance->register_legacy();
-		}
+		$instance->register_webhooks();
 	}
 
 	/**
-	 * Register webhooks using the new registry pattern.
+	 * Register webhooks using the registry pattern.
 	 */
-	private function register_with_registry(): void {
+	private function register_webhooks(): void {
 		// Register core webhooks with default configuration
 		$this->registry->register( new PostWebhook() );
 		$this->registry->register( new TermWebhook() );
@@ -121,55 +104,6 @@ class ServiceProvider {
 
 		// Initialize all registered webhooks
 		$this->registry->init_all();
-	}
-
-	/**
-	 * Register webhooks using the legacy direct instantiation pattern.
-	 *
-	 * Maintained for backwards compatibility.
-	 */
-	private function register_legacy(): void {
-
-		$post_emitter = new Post( $this->dispatcher );
-		$term_emitter = new Term( $this->dispatcher );
-		$user_emitter = new User( $this->dispatcher );
-		$meta_emitter = new Meta( $this->dispatcher, $post_emitter, $term_emitter, $user_emitter );
-
-		add_action( 'save_post', array( $post_emitter, 'on_save_post' ), 10, 3 );
-		add_action( 'before_delete_post', array( $post_emitter, 'on_delete_post' ), 10, 1 );
-
-		add_action( 'created_term', array( $term_emitter, 'on_created_term' ), 10, 3 );
-		add_action( 'edited_term', array( $term_emitter, 'on_edited_term' ), 10, 3 );
-		add_action( 'delete_term', array( $term_emitter, 'on_deleted_term' ), 10, 3 );
-
-		add_action( 'user_register', array( $user_emitter, 'on_user_register' ), 10, 1 );
-		add_action( 'profile_update', array( $user_emitter, 'on_profile_update' ), 10, 1 );
-		add_action( 'deleted_user', array( $user_emitter, 'on_deleted_user' ), 10, 1 );
-
-		add_action( 'deleted_post_meta', array( $meta_emitter, 'on_deleted_post_meta' ), 10, 4 );
-		add_action( 'deleted_term_meta', array( $meta_emitter, 'on_deleted_term_meta' ), 10, 4 );
-		add_action( 'deleted_user_meta', array( $meta_emitter, 'on_deleted_user_meta' ), 10, 4 );
-
-		add_filter(
-			'acf/update_value',
-			function ( $value, $object_id, $field, $original ) use ( $meta_emitter ) {
-				[$entity, $id] = AcfUtil::parse_object_id( $object_id );
-
-				if ( null === $entity || null === $id ) {
-					return $value;
-				}
-
-				$meta_emitter->acf_update_handler( $entity, (int) $id, is_array( $field ) ? $field : array(), $value, $original );
-				return $value;
-			},
-			10,
-			4
-		);
-
-		// Add filters for all meta types with high priority to run late
-		add_filter( 'update_post_metadata', array( $meta_emitter, 'on_updated_post_meta' ), 999, 5 );
-		add_filter( 'update_term_metadata', array( $meta_emitter, 'on_updated_term_meta' ), 999, 5 );
-		add_filter( 'update_user_metadata', array( $meta_emitter, 'on_updated_user_meta' ), 999, 5 );
 	}
 
 	/**

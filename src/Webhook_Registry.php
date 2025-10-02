@@ -15,14 +15,14 @@ namespace Citation\WP_Webhook_Framework;
  * Provides a centralized way to register, configure, and manage webhook instances
  * for both core framework webhooks and third-party extensions.
  */
-class WebhookRegistry {
+class Webhook_Registry {
 
 	/**
 	 * Singleton instance.
 	 *
-	 * @var WebhookRegistry|null
+	 * @var Webhook_Registry|null
 	 */
-	private static ?WebhookRegistry $instance = null;
+	private static ?Webhook_Registry $instance = null;
 
 	/**
 	 * Registered webhooks.
@@ -51,9 +51,9 @@ class WebhookRegistry {
 	 * Get singleton instance.
 	 *
 	 * @param Dispatcher|null $dispatcher Optional dispatcher instance.
-	 * @return WebhookRegistry
+	 * @return Webhook_Registry
 	 */
-	public static function instance( ?Dispatcher $dispatcher = null ): WebhookRegistry {
+	public static function instance( ?Dispatcher $dispatcher = null ): Webhook_Registry {
 		if ( null === self::$instance ) {
 			self::$instance = new self( $dispatcher );
 		}

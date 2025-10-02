@@ -11,7 +11,7 @@ namespace Citation\WP_Webhook_Framework\Webhooks;
 
 use Citation\WP_Webhook_Framework\Webhook;
 use Citation\WP_Webhook_Framework\Entities\User;
-use Citation\WP_Webhook_Framework\WebhookRegistry;
+use Citation\WP_Webhook_Framework\Webhook_Registry;
 
 /**
  * User webhook implementation with configuration capabilities.
@@ -19,7 +19,7 @@ use Citation\WP_Webhook_Framework\WebhookRegistry;
  * Handles user-related webhook events with configurable retry policies,
  * timeouts, and other webhook-specific settings.
  */
-class UserWebhook extends Webhook {
+class User_Webhook extends Webhook {
 
 	/**
 	 * The user emitter instance.
@@ -38,7 +38,7 @@ class UserWebhook extends Webhook {
 		parent::__construct( $name );
 		
 		// Get dispatcher from registry
-		$registry = WebhookRegistry::instance();
+		$registry = Webhook_Registry::instance();
 		$this->user_emitter = new User( $registry->get_dispatcher() );
 	}
 

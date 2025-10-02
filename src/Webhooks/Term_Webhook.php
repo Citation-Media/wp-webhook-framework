@@ -11,7 +11,7 @@ namespace Citation\WP_Webhook_Framework\Webhooks;
 
 use Citation\WP_Webhook_Framework\Webhook;
 use Citation\WP_Webhook_Framework\Entities\Term;
-use Citation\WP_Webhook_Framework\WebhookRegistry;
+use Citation\WP_Webhook_Framework\Webhook_Registry;
 
 /**
  * Term webhook implementation with configuration capabilities.
@@ -19,7 +19,7 @@ use Citation\WP_Webhook_Framework\WebhookRegistry;
  * Handles term-related webhook events with configurable retry policies,
  * timeouts, and other webhook-specific settings.
  */
-class TermWebhook extends Webhook {
+class Term_Webhook extends Webhook {
 
 	/**
 	 * The term emitter instance.
@@ -38,7 +38,7 @@ class TermWebhook extends Webhook {
 		parent::__construct( $name );
 		
 		// Get dispatcher from registry
-		$registry = WebhookRegistry::instance();
+		$registry = Webhook_Registry::instance();
 		$this->term_emitter = new Term( $registry->get_dispatcher() );
 	}
 

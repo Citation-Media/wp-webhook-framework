@@ -14,7 +14,7 @@ use Citation\WP_Webhook_Framework\Entities\Meta;
 use Citation\WP_Webhook_Framework\Entities\Post;
 use Citation\WP_Webhook_Framework\Entities\Term;
 use Citation\WP_Webhook_Framework\Entities\User;
-use Citation\WP_Webhook_Framework\WebhookRegistry;
+use Citation\WP_Webhook_Framework\Webhook_Registry;
 use Citation\WP_Webhook_Framework\Support\AcfUtil;
 
 /**
@@ -23,7 +23,7 @@ use Citation\WP_Webhook_Framework\Support\AcfUtil;
  * Handles meta-related webhook events with configurable retry policies,
  * timeouts, and other webhook-specific settings.
  */
-class MetaWebhook extends Webhook {
+class Meta_Webhook extends Webhook {
 
 	/**
 	 * The meta emitter instance.
@@ -42,7 +42,7 @@ class MetaWebhook extends Webhook {
 		parent::__construct( $name );
 		
 		// Get dispatcher and emitters from registry
-		$registry = WebhookRegistry::instance();
+		$registry = Webhook_Registry::instance();
 		$dispatcher = $registry->get_dispatcher();
 		
 		// We need access to other emitters for Meta emitter

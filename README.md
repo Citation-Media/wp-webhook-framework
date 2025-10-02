@@ -34,7 +34,7 @@ Ensure Action Scheduler is active (dependency is declared).
 ### Basic Setup
 ```php
 // Initialize the webhook framework using the registry pattern
-\Citation\WP_Webhook_Framework\ServiceProvider::register();
+\Citation\WP_Webhook_Framework\Service_Provider::register();
 ```
 
 ### Registry Pattern
@@ -44,7 +44,7 @@ The framework uses a registry pattern for enhanced third-party extensibility and
 #### Basic Configuration
 ```php
 // Get the registry instance
-$registry = \Citation\WP_Webhook_Framework\ServiceProvider::get_registry();
+$registry = \Citation\WP_Webhook_Framework\Service_Provider::get_registry();
 
 // Access and configure existing webhooks
 $post_webhook = $registry->get('post');
@@ -57,7 +57,7 @@ if ($post_webhook) {
 
 #### Creating Custom Webhooks
 ```php
-class CustomWebhook extends \Citation\WP_Webhook_Framework\Webhook {
+class Custom_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
     
     public function __construct() {
         parent::__construct('my_custom_webhook');
@@ -105,14 +105,14 @@ $webhook->allowed_retries(5)      // Set retry attempts (0-10)
 
 ### Singleton Pattern
 
-The ServiceProvider uses the singleton pattern to ensure only one instance is created and shared across your application. This prevents duplicate hook registrations and ensures consistent configuration.
+The Service_Provider uses the singleton pattern to ensure only one instance is created and shared across your application. This prevents duplicate hook registrations and ensures consistent configuration.
 
 ```php
 // Get the singleton instance
-$provider = \Citation\WP_Webhook_Framework\ServiceProvider::get_instance();
+$provider = \Citation\WP_Webhook_Framework\Service_Provider::get_instance();
 
 // The same instance is returned on subsequent calls
-$sameProvider = \Citation\WP_Webhook_Framework\ServiceProvider::get_instance();
+$sameProvider = \Citation\WP_Webhook_Framework\Service_Provider::get_instance();
 ```
 
 ## Third-Party Integration
@@ -124,18 +124,18 @@ The registry pattern enables seamless integration with third-party plugins and c
 /**
  * Register custom webhooks with the framework.
  *
- * @param \Citation\WP_Webhook_Framework\WebhookRegistry $registry
+ * @param \Citation\WP_Webhook_Framework\Webhook_Registry $registry
  */
 function my_plugin_register_webhooks($registry) {
     // Register custom webhooks here
-    $registry->register(new MyCustomWebhook());
+    $registry->register(new My_Custom_Webhook());
 }
 add_action('wpwf_register_webhooks', 'my_plugin_register_webhooks');
 ```
 
 ### Example: WooCommerce Integration
 ```php
-class WooCommerceOrderWebhook extends \Citation\WP_Webhook_Framework\Webhook {
+class WooCommerce_Order_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
     
     public function __construct() {
         parent::__construct('woocommerce_orders');
@@ -152,7 +152,7 @@ class WooCommerceOrderWebhook extends \Citation\WP_Webhook_Framework\Webhook {
     }
     
     public function on_new_order($order_id): void {
-        $registry = \Citation\WP_Webhook_Framework\WebhookRegistry::instance();
+        $registry = \Citation\WP_Webhook_Framework\Webhook_Registry::instance();
         $dispatcher = $registry->get_dispatcher();
         
         $payload = ['order_id' => $order_id, 'timestamp' => time()];
@@ -160,7 +160,7 @@ class WooCommerceOrderWebhook extends \Citation\WP_Webhook_Framework\Webhook {
     }
     
     public function on_status_changed($order_id, $old_status, $new_status, $order): void {
-        $registry = \Citation\WP_Webhook_Framework\WebhookRegistry::instance();
+        $registry = \Citation\WP_Webhook_Framework\Webhook_Registry::instance();
         $dispatcher = $registry->get_dispatcher();
         
         $payload = [

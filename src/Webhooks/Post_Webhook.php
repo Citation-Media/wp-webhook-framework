@@ -11,7 +11,7 @@ namespace Citation\WP_Webhook_Framework\Webhooks;
 
 use Citation\WP_Webhook_Framework\Webhook;
 use Citation\WP_Webhook_Framework\Entities\Post;
-use Citation\WP_Webhook_Framework\WebhookRegistry;
+use Citation\WP_Webhook_Framework\Webhook_Registry;
 
 /**
  * Post webhook implementation with configuration capabilities.
@@ -19,7 +19,7 @@ use Citation\WP_Webhook_Framework\WebhookRegistry;
  * Handles post-related webhook events with configurable retry policies,
  * timeouts, and other webhook-specific settings.
  */
-class PostWebhook extends Webhook {
+class Post_Webhook extends Webhook {
 
 	/**
 	 * The post emitter instance.
@@ -38,7 +38,7 @@ class PostWebhook extends Webhook {
 		parent::__construct( $name );
 		
 		// Get dispatcher from registry
-		$registry = WebhookRegistry::instance();
+		$registry = Webhook_Registry::instance();
 		$this->post_emitter = new Post( $registry->get_dispatcher() );
 	}
 

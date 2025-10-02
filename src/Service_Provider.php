@@ -1,6 +1,6 @@
 <?php
 /**
- * ServiceProvider class for the WP Webhook Framework.
+ * Service_Provider class for the WP Webhook Framework.
  *
  * @package Citation\WP_Webhook_Framework
  */
@@ -12,24 +12,24 @@ use Citation\WP_Webhook_Framework\Entities\Term;
 use Citation\WP_Webhook_Framework\Entities\User;
 use Citation\WP_Webhook_Framework\Entities\Meta;
 use Citation\WP_Webhook_Framework\Support\AcfUtil;
-use Citation\WP_Webhook_Framework\Webhooks\PostWebhook;
-use Citation\WP_Webhook_Framework\Webhooks\TermWebhook;
-use Citation\WP_Webhook_Framework\Webhooks\UserWebhook;
-use Citation\WP_Webhook_Framework\Webhooks\MetaWebhook;
+use Citation\WP_Webhook_Framework\Webhooks\Post_Webhook;
+use Citation\WP_Webhook_Framework\Webhooks\Term_Webhook;
+use Citation\WP_Webhook_Framework\Webhooks\User_Webhook;
+use Citation\WP_Webhook_Framework\Webhooks\Meta_Webhook;
 
 /**
- * Class ServiceProvider
+ * Class Service_Provider
  *
  * Registers WordPress hooks and wires emitters to the dispatcher using the registry pattern.
  */
-class ServiceProvider {
+class Service_Provider {
 
 	/**
 	 * Singleton instance.
 	 *
-	 * @var ServiceProvider|null
+	 * @var Service_Provider|null
 	 */
-	private static ?ServiceProvider $instance = null;
+	private static ?Service_Provider $instance = null;
 
 	/**
 	 * The webhook dispatcher instance.
@@ -41,9 +41,9 @@ class ServiceProvider {
 	/**
 	 * The webhook registry instance.
 	 *
-	 * @var WebhookRegistry
+	 * @var Webhook_Registry
 	 */
-	private WebhookRegistry $registry;
+	private Webhook_Registry $registry;
 
 	/**
 	 * Private constructor to prevent direct instantiation.
@@ -52,16 +52,16 @@ class ServiceProvider {
 	 */
 	private function __construct( ?Dispatcher $dispatcher = null ) {
 		$this->dispatcher = $dispatcher ?: new Dispatcher();
-		$this->registry = WebhookRegistry::instance( $this->dispatcher );
+		$this->registry = Webhook_Registry::instance( $this->dispatcher );
 	}
 
 	/**
 	 * Get singleton instance.
 	 *
 	 * @param Dispatcher|null $dispatcher Optional dispatcher instance.
-	 * @return ServiceProvider
+	 * @return Service_Provider
 	 */
-	private static function get_instance( ?Dispatcher $dispatcher = null ): ServiceProvider {
+	private static function get_instance( ?Dispatcher $dispatcher = null ): Service_Provider {
 		if ( null === self::$instance ) {
 			self::$instance = new self( $dispatcher );
 		}
@@ -90,15 +90,15 @@ class ServiceProvider {
 	 */
 	private function register_webhooks(): void {
 		// Register core webhooks with default configuration
-		$this->registry->register( new PostWebhook() );
-		$this->registry->register( new TermWebhook() );
-		$this->registry->register( new UserWebhook() );
-		$this->registry->register( new MetaWebhook() );
+		$this->registry->register( new Post_Webhook() );
+		$this->registry->register( new Term_Webhook() );
+		$this->registry->register( new User_Webhook() );
+		$this->registry->register( new Meta_Webhook() );
 
 		/**
 		 * Allow third parties to register custom webhooks.
 		 *
-		 * @param WebhookRegistry $registry The webhook registry instance.
+		 * @param Webhook_Registry $registry The webhook registry instance.
 		 */
 		do_action( 'wpwf_register_webhooks', $this->registry );
 
@@ -109,9 +109,9 @@ class ServiceProvider {
 	/**
 	 * Get the webhook registry instance.
 	 *
-	 * @return WebhookRegistry
+	 * @return Webhook_Registry
 	 */
-	public static function get_registry(): WebhookRegistry {
+	public static function get_registry(): Webhook_Registry {
 		$instance = self::get_instance();
 		return $instance->registry;
 	}

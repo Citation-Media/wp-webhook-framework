@@ -23,6 +23,35 @@ Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking P
   - Filterable email notifications with i18n support
   - Clean DTO architecture for maintainable code
 
+## Architecture Overview
+
+### Core Classes
+
+**Service Provider & Registry**:
+- `Service_Provider` - Singleton that bootstraps the framework, registers Action Scheduler hooks, and provides access to registry/dispatcher instances
+- `Webhook_Registry` - Singleton registry storing all webhook instances, handles registration and initialization via `wpwf_register_webhooks` action
+
+**Webhook System**:
+- `Webhook` (abstract) - Base class for all webhooks with configuration methods (`allowed_retries()`, `timeout()`, `enabled()`, `webhook_url()`, `headers()`)
+- `Webhooks\Post_Webhook` - Handles post create/update/delete events
+- `Webhooks\Term_Webhook` - Handles term create/update/delete events  
+- `Webhooks\User_Webhook` - Handles user create/update/delete events
+- `Webhooks\Meta_Webhook` - Handles meta changes (triggers parent entity update webhook)
+
+**Delivery System**:
+- `Dispatcher` - Schedules webhooks via Action Scheduler with deduplication, sends HTTP requests, handles success/failure tracking
+- `Failure` - DTO for failure state management (count, timestamps, blocking status) stored in WordPress transients
+
+**Entity Emitters** (in `Entities/`):
+- `Emitter` (abstract) - Base class with common emission logic
+- `Post`, `Term`, `User`, `Meta` - Listen to WordPress hooks, build payloads, call `Dispatcher::schedule()`
+
+**Support Classes**:
+- `Support\AcfUtil` - Detects and enriches ACF field data in payloads
+- `Support\Payload` - Payload building and filtering utilities
+
+**Data Flow**: WordPress hook → Emitter → Dispatcher (dedupe + schedule AS action) → Action Scheduler → Dispatcher (send HTTP) → Failure tracking
+
 ## Install
 ```bash
 composer require citation-media/wp-webhook-framework

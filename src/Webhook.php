@@ -13,7 +13,7 @@ namespace Citation\WP_Webhook_Framework;
  * Base webhook class with configuration capabilities.
  *
  * Provides configuration methods for webhook behavior including retry policies,
- * timeout settings, and other webhook-specific configurations.
+ * timeout settings, and other webhook-specific configurations. Stateless.
  */
 abstract class Webhook {
 
@@ -31,7 +31,7 @@ abstract class Webhook {
 	 * @var int
 	 * @phpstan-var int<0,10>
 	 */
-	protected int $allowed_retries = 3;
+	protected int $allowed_retries = 0;
 
 	/**
 	 * Request timeout in seconds.

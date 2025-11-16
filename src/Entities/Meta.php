@@ -163,7 +163,7 @@ class Meta extends Emitter {
 	public function on_meta_update( string $meta_type, int $object_id, string $meta_key, mixed $new_value, mixed $old_value = null ): void {
 
 		// No change do nothing. Never compare strict!
-		if ( $new_value === $old_value ) {
+		if ( $new_value == $old_value ) {
 			return;
 		}
 

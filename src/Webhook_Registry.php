@@ -74,7 +74,7 @@ class Webhook_Registry {
 
 		if ( isset( $this->webhooks[ $name ] ) ) {
 			throw new \InvalidArgumentException(
-				sprintf( 'Webhook with name "%s" is already registered.', $name )
+				sprintf( 'Webhook with name "%s" is already registered.', esc_html( $name ) )
 			);
 		}
 

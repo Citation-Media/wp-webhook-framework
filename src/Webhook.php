@@ -64,6 +64,12 @@ abstract class Webhook {
 	 */
 	protected array $headers = array();
 
+	/**
+	 * The webhook payload data.
+	 *
+	 * @var array<string,mixed>
+	 * @phpstan-var array<string,mixed>
+	 */
 	protected array $payload = array();
 
 	/**
@@ -195,10 +201,22 @@ abstract class Webhook {
 		return $this->headers;
 	}
 
+	/**
+	 * Get the webhook payload data.
+	 *
+	 * @return array<string,mixed>
+	 * @phpstan-return array<string,mixed>
+	 */
 	public function get_payload(): array {
 		return $this->payload;
 	}
 
+	/**
+	 * Set the webhook payload data.
+	 *
+	 * @param array<string,mixed> $payload The payload data.
+	 * @phpstan-param array<string,mixed> $payload
+	 */
 	public function set_payload( array $payload ): void {
 		$this->payload = $payload;
 	}
@@ -227,6 +245,7 @@ abstract class Webhook {
 		try {
 			$dispatcher->schedule( $this->get_webhook_url(), $action, $entity_type, $entity_id, $this->get_payload(), $this->get_headers() );
 		} catch ( \WP_Exception $e ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error, WordPress.Security.EscapeOutput.OutputNotEscaped -- Error handling context, no escaping needed.
 			trigger_error( sprintf( 'Failed to schedule webhook "%s": %s', $this->name, $e->getMessage() ), E_USER_WARNING );
 		}
 	}

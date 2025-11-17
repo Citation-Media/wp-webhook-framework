@@ -38,7 +38,6 @@ class Term_Webhook extends Webhook {
 		parent::__construct( $name );
 		
 		// Get dispatcher from registry
-		$registry = Webhook_Registry::instance();
 		$this->term_handler = new Term();
 	}
 
@@ -63,8 +62,8 @@ class Term_Webhook extends Webhook {
 	 * @param string $taxonomy The taxonomy name.
 	 */
 	public function on_created_term( int $term_id, int $tt_id, string $taxonomy ): void {
-		$payload = $this->term_handler->prepare_payload( $term_id );
-		$this->emit( 'create', 'term', $term_id, $payload );
+		$this->set_payload($this->term_handler->prepare_payload( $term_id ));
+		$this->emit( 'create', 'term', $term_id );
 	}
 
 	/**
@@ -75,8 +74,8 @@ class Term_Webhook extends Webhook {
 	 * @param string $taxonomy The taxonomy name.
 	 */
 	public function on_edited_term( int $term_id, int $tt_id, string $taxonomy ): void {
-		$payload = $this->term_handler->prepare_payload( $term_id );
-		$this->emit( 'update', 'term', $term_id, $payload );
+		$this->set_payload($this->term_handler->prepare_payload( $term_id ));
+		$this->emit( 'update', 'term', $term_id );
 	}
 
 	/**
@@ -87,8 +86,8 @@ class Term_Webhook extends Webhook {
 	 * @param string $taxonomy The taxonomy name.
 	 */
 	public function on_deleted_term( int $term_id, int $tt_id, string $taxonomy ): void {
-		$payload = $this->term_handler->prepare_payload( $term_id );
-		$this->emit( 'delete', 'term', $term_id, $payload );
+		$this->set_payload($this->term_handler->prepare_payload( $term_id ));
+		$this->emit( 'delete', 'term', $term_id );
 	}
 
 	/**

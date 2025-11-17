@@ -55,7 +55,7 @@ class Meta_Webhook extends Webhook {
 		$term_handler = $term_webhook ? $term_webhook->get_handler() : new Term();
 		$user_handler = $user_webhook ? $user_webhook->get_handler() : new User();
 		
-		$this->meta_handler = new Meta( $dispatcher, $post_handler, $term_handler, $user_handler );
+		$this->meta_handler = new Meta( $post_handler, $term_handler, $user_handler );
 	}
 
 	/**
@@ -233,8 +233,8 @@ class Meta_Webhook extends Webhook {
 		$action = $is_deletion ? 'delete' : 'update';
 
 		// Emit meta-level webhook with meta_key in payload
-		$meta_payload = $this->meta_handler->prepare_payload( $meta_type, $object_id, $meta_key );
-		$this->emit( $action, 'meta', $object_id, $meta_payload );
+		$this->set_payload($this->meta_handler->prepare_payload( $meta_type, $object_id, $meta_key ));
+		$this->emit( $action, 'meta', $object_id );
 
 		// Trigger upstream entity-level update webhook
 		$this->trigger_entity_update( $meta_type, $object_id );
@@ -244,7 +244,7 @@ class Meta_Webhook extends Webhook {
 	 * Trigger the appropriate entity-level update webhook.
 	 *
 	 * When meta changes, the parent entity (post/term/user) is also considered updated.
-	 * Uses the parent entity's webhook name for configuration.
+	 * Uses the parent entity's webhook instance for configuration.
 	 *
 	 * @param string $meta_type The meta type.
 	 * @param int    $object_id The object ID.
@@ -253,14 +253,18 @@ class Meta_Webhook extends Webhook {
 		$registry = Webhook_Registry::instance();
 		$dispatcher = $registry->get_dispatcher();
 		
-		// Get the parent entity webhook name for configuration
-		$webhook_name = $meta_type;
+		// Get the parent entity webhook instance
+		$parent_webhook = $registry->get( $meta_type );
+		
+		if ( ! $parent_webhook ) {
+			return;
+		}
 		
 		// Get entity payload without meta_key
 		$entity_payload = $this->meta_handler->get_entity_payload( $meta_type, $object_id );
 		
 		// Emit entity update using the parent entity's webhook configuration
-		$dispatcher->schedule( 'update', $meta_type, $object_id, $entity_payload, $webhook_name );
+		$dispatcher->schedule( $parent_webhook, 'update', $meta_type, $object_id, $entity_payload );
 	}
 
 	/**

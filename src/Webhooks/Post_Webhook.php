@@ -36,7 +36,7 @@ class Post_Webhook extends Webhook {
 	 */
 	public function __construct( string $name = 'post' ) {
 		parent::__construct( $name );
-		
+
 		// Get dispatcher from registry
 		$this->post_handler = new Post();
 	}
@@ -66,7 +66,7 @@ class Post_Webhook extends Webhook {
 		}
 
 		$action = $update ? 'update' : 'create';
-		$this->set_payload($this->post_handler->prepare_payload( $post_id ));
+		$this->set_payload( $this->post_handler->prepare_payload( $post_id ) );
 		$this->emit( $action, 'post', $post_id );
 	}
 
@@ -76,7 +76,7 @@ class Post_Webhook extends Webhook {
 	 * @param int $post_id The post ID.
 	 */
 	public function on_delete_post( int $post_id ): void {
-		$this->set_payload($this->post_handler->prepare_payload( $post_id ));
+		$this->set_payload( $this->post_handler->prepare_payload( $post_id ) );
 		$this->emit( 'delete', 'post', $post_id );
 	}
 

@@ -52,7 +52,7 @@ class Service_Provider {
 	 */
 	private function __construct( ?Dispatcher $dispatcher = null ) {
 		$this->dispatcher = $dispatcher ?: new Dispatcher();
-		$this->registry = Webhook_Registry::instance( $this->dispatcher );
+		$this->registry   = Webhook_Registry::instance( $this->dispatcher );
 	}
 
 	/**

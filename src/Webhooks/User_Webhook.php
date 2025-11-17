@@ -36,7 +36,7 @@ class User_Webhook extends Webhook {
 	 */
 	public function __construct( string $name = 'user' ) {
 		parent::__construct( $name );
-		
+
 		// Get dispatcher from registry
 		$this->user_handler = new User();
 	}
@@ -60,7 +60,7 @@ class User_Webhook extends Webhook {
 	 * @param int $user_id The user ID.
 	 */
 	public function on_user_register( int $user_id ): void {
-		$this->set_payload($this->user_handler->prepare_payload( $user_id ));
+		$this->set_payload( $this->user_handler->prepare_payload( $user_id ) );
 		$this->emit( 'create', 'user', $user_id );
 	}
 
@@ -70,7 +70,7 @@ class User_Webhook extends Webhook {
 	 * @param int $user_id The user ID.
 	 */
 	public function on_profile_update( int $user_id ): void {
-		$this->set_payload($this->user_handler->prepare_payload( $user_id ));
+		$this->set_payload( $this->user_handler->prepare_payload( $user_id ) );
 		$this->emit( 'update', 'user', $user_id );
 	}
 
@@ -80,7 +80,7 @@ class User_Webhook extends Webhook {
 	 * @param int $user_id The user ID.
 	 */
 	public function on_deleted_user( int $user_id ): void {
-		$this->set_payload($this->user_handler->prepare_payload( $user_id ));
+		$this->set_payload( $this->user_handler->prepare_payload( $user_id ) );
 		$this->emit( 'delete', 'user', $user_id );
 	}
 

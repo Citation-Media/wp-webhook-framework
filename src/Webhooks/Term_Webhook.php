@@ -39,7 +39,7 @@ class Term_Webhook extends Webhook {
 		
 		// Get dispatcher from registry
 		$registry = Webhook_Registry::instance();
-		$this->term_handler = new Term( $registry->get_dispatcher() );
+		$this->term_handler = new Term();
 	}
 
 	/**

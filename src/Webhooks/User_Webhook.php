@@ -39,7 +39,7 @@ class User_Webhook extends Webhook {
 		
 		// Get dispatcher from registry
 		$registry = Webhook_Registry::instance();
-		$this->user_handler = new User( $registry->get_dispatcher() );
+		$this->user_handler = new User();
 	}
 
 	/**

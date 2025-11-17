@@ -39,7 +39,7 @@ class Post_Webhook extends Webhook {
 		
 		// Get dispatcher from registry
 		$registry = Webhook_Registry::instance();
-		$this->post_handler = new Post( $registry->get_dispatcher() );
+		$this->post_handler = new Post();
 	}
 
 	/**

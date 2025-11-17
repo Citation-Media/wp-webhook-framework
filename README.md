@@ -25,6 +25,16 @@ Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking P
 
 ## Architecture Overview
 
+### Webhook Statefulness
+
+**Important:** Webhook instances are registered as singletons in the registry and must remain stateless. Do not store per-emission data (payloads, dynamic headers) as instance properties. Instead, pass such data as parameters to `emit()`.
+
+**Stateless (configuration)**: Set during `init()` via `allowed_retries()`, `timeout()`, `webhook_url()`, `headers()` - these are configuration concerns that apply to all emissions from this webhook.
+
+**Stateful (emission data)**: Pass directly to `emit()` as parameters - payloads and dynamic headers that change per emission must be passed as method arguments, not stored on the instance.
+
+This design prevents race conditions when multiple WordPress hooks fire rapidly and ensures webhook instances remain reusable configuration objects.
+
 ### Core Classes
 
 **Service Provider & Registry**:
@@ -32,25 +42,25 @@ Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking P
 - `Webhook_Registry` - Singleton registry storing all webhook instances, handles registration and initialization via `wpwf_register_webhooks` action
 
 **Webhook System**:
-- `Webhook` (abstract) - Base class for all webhooks with configuration methods (`allowed_retries()`, `timeout()`, `enabled()`, `webhook_url()`, `headers()`)
-- `Webhooks\Post_Webhook` - Handles post create/update/delete events
-- `Webhooks\Term_Webhook` - Handles term create/update/delete events  
-- `Webhooks\User_Webhook` - Handles user create/update/delete events
-- `Webhooks\Meta_Webhook` - Handles meta changes (triggers parent entity update webhook)
+- `Webhook` (abstract) - Base class for all webhooks with configuration methods (`allowed_retries()`, `timeout()`, `enabled()`, `webhook_url()`, `headers()`) and `emit()` method
+- `Webhooks\Post_Webhook` - Handles post create/update/delete events, registers WordPress hooks, calls `emit()`
+- `Webhooks\Term_Webhook` - Handles term create/update/delete events, registers WordPress hooks, calls `emit()`
+- `Webhooks\User_Webhook` - Handles user create/update/delete events, registers WordPress hooks, calls `emit()`
+- `Webhooks\Meta_Webhook` - Handles meta changes, emits meta webhooks and triggers parent entity update webhooks
 
 **Delivery System**:
 - `Dispatcher` - Schedules webhooks via Action Scheduler with deduplication, sends HTTP requests, handles success/failure tracking
 - `Failure` - DTO for failure state management (count, timestamps, blocking status) stored in WordPress transients
 
-**Entity Emitters** (in `Entities/`):
-- `Emitter` (abstract) - Base class with common emission logic
-- `Post`, `Term`, `User`, `Meta` - Listen to WordPress hooks, build payloads, call `Dispatcher::schedule()`
+**Entity Handlers** (in `Entities/`):
+Reusable data transformation components instantiated by webhooks. They prepare entity payloads and provide utility methods.
+- `Entity_Handler` (abstract) - Base class with dispatcher reference
+- `Post`, `Term`, `User` - Entity-specific implementations with `prepare_payload()` methods
+- `Meta` - Special handler for metadata that provides utility methods for meta handling and payload preparation
 
-**Support Classes**:
-- `Support\AcfUtil` - Detects and enriches ACF field data in payloads
-- `Support\Payload` - Payload building and filtering utilities
-
-**Data Flow**: WordPress hook → Emitter → Dispatcher (dedupe + schedule AS action) → Action Scheduler → Dispatcher (send HTTP) → Failure tracking
+**Data Flow**: 
+- **Standard entities**: WordPress hook → Webhook → Handler::prepare_payload() → Webhook::emit() → Dispatcher → Action Scheduler
+- **Meta changes**: WordPress hook → Meta_Webhook → Meta_Handler::prepare_payload() → Meta_Webhook::emit() (for meta webhook) + Parent entity webhook (for entity update) → Dispatcher → Action Scheduler
 
 ## Install
 ```bash
@@ -85,6 +95,8 @@ if ($post_webhook) {
 ```
 
 #### Creating Custom Webhooks
+
+**Simple webhook (no handlers):**
 ```php
 class Custom_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
     
@@ -112,13 +124,13 @@ class Custom_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
         $dispatcher = $registry->get_dispatcher();
         
         $payload = ['custom_data' => $data, 'timestamp' => time()];
-        $dispatcher->schedule('action_triggered', 'custom', $data['id'], $payload);
+        $dispatcher->schedule('action_triggered', 'custom', $data['id'], $payload, $this->get_name());
     }
 }
 
 // Register your custom webhook
 function register_my_webhooks($registry) {
-    $registry->register(new CustomWebhook());
+    $registry->register(new Custom_Webhook());
 }
 add_action('wpwf_register_webhooks', 'register_my_webhooks');
 ```

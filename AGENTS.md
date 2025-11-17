@@ -23,6 +23,8 @@
 ## Architecture
 Entity-based webhook framework using registry pattern. Webhooks extend abstract `Webhook` class, implement `init()` method, and register via `Service_Provider`.
 
+**Webhook Statelessness Rule**: Webhook instances are singletons registered in the registry and MUST remain stateless. Never store per-emission data (payloads, dynamic headers) as instance properties. Pass emission-specific data as parameters to `emit()`. Only configuration data set during `init()` (via `allowed_retries()`, `timeout()`, `webhook_url()`, `headers()`) should use instance properties.
+
 **Core structure**: See @README.md#architecture-overview for detailed explanation of core classes and data flow.
 
 ## Documentation

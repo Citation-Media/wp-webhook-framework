@@ -34,11 +34,11 @@ class Dispatcher {
 	public function schedule( string $url, string $action, string $entity, int|string $id, array $payload = array(), array $headers = array() ): void {
 
 		if ( ! function_exists( 'as_schedule_single_action' ) || ! function_exists( 'as_get_scheduled_actions' ) ) {
-			throw new \WP_Exception('action_scheduler_not_active');
+			throw new \WP_Exception( 'action_scheduler_not_active' );
 		}
 
 		// Apply filter if no webhook-specific URL was set
-		$url = apply_filters('wpwf_url', $url,  $entity,  $id);
+		$url = apply_filters( 'wpwf_url', $url, $entity, $id );
 
 		// Constants always take precedence over filters for reliability
 		if (
@@ -50,17 +50,17 @@ class Dispatcher {
 		}
 
 		if ( empty( $url ) ) {
-			throw new \WP_Exception('webhook_url_not_set');
+			throw new \WP_Exception( 'webhook_url_not_set' );
 		}
 
 		// Check if this URL is blocked due to too many failures
 		if ( $this->is_url_blocked( $url ) ) {
-			throw new \WP_Exception('webhook_url_blocked');
+			throw new \WP_Exception( 'webhook_url_blocked' );
 		}
 
-		$payload = apply_filters('wpwf_payload', $payload,  $entity,  $id);
-		if (empty($payload)) {
-			throw new \WP_Exception('webhook_payload_empty');
+		$payload = apply_filters( 'wpwf_payload', $payload, $entity, $id );
+		if ( empty( $payload ) ) {
+			throw new \WP_Exception( 'webhook_payload_empty' );
 		}
 
 		$query = as_get_scheduled_actions(
@@ -87,12 +87,12 @@ class Dispatcher {
 			time() + 5,
 			'wpwf_send_webhook',
 			array(
-				'url'          => $url,
-				'action'       => $action,
-				'entity'       => $entity,
-				'id'           => $id,
-				'payload'      => $payload,
-				'headers'      => $headers
+				'url'     => $url,
+				'action'  => $action,
+				'entity'  => $entity,
+				'id'      => $id,
+				'payload' => $payload,
+				'headers' => $headers,
 			),
 			'wpwf'
 		);
@@ -116,12 +116,12 @@ class Dispatcher {
 
 		// Check if this URL is blocked due to too many failures
 		if ( $this->is_url_blocked( $url ) ) {
-			throw new \WP_Exception('action_scheduler_not_active');
+			throw new \WP_Exception( 'action_scheduler_not_active' );
 		}
 
 		// Reconstruct webhook instance from registry
 		$registry = Webhook_Registry::instance();
-		$webhook = $registry->get( $headers['wpwf-webhook-name'] );
+		$webhook  = $registry->get( $headers['wpwf-webhook-name'] );
 
 		$body = array_merge(
 			$payload,
@@ -132,10 +132,10 @@ class Dispatcher {
 			)
 		);
 
-		if (!isset($headers['Content-Type'])) {
+		if ( ! isset( $headers['Content-Type'] ) ) {
 			$headers['Content-Type'] = 'application/json';
 		}
-		$headers = apply_filters('wpwf_headers', $headers,  $entity,  $id, $webhook?->get_name()) ;
+		$headers = apply_filters( 'wpwf_headers', $headers, $entity, $id, $webhook?->get_name() );
 
 		$args = array(
 			'body'     => wp_json_encode( $body ),

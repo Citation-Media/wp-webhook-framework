@@ -20,7 +20,7 @@ use Citation\WP_Webhook_Framework\Webhooks\Meta_Webhook;
 /**
  * Class Service_Provider
  *
- * Registers WordPress hooks and wires emitters to the dispatcher using the registry pattern.
+ * Registers WordPress hooks and wires entity handlers to the dispatcher using the registry pattern.
  */
 class Service_Provider {
 
@@ -79,7 +79,7 @@ class Service_Provider {
 			'wpwf_send_webhook',
 			array( $instance->dispatcher, 'process_scheduled_webhook' ),
 			10,
-			5
+			6
 		);
 
 		$instance->register_webhooks();

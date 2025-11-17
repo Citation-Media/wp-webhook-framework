@@ -171,33 +171,6 @@ class Webhook_Registry {
 	}
 
 	/**
-	 * Get webhook configuration by name.
-	 *
-	 * @param string $name The webhook name.
-	 * @return array<string,mixed>|null
-	 * @phpstan-param non-empty-string $name
-	 * @phpstan-return array{name: string, allowed_retries: int, timeout: int, enabled: bool, webhook_url: string|null, headers: array<string,string>}|null
-	 */
-	public function get_config( string $name ): ?array {
-		$webhook = $this->get( $name );
-		return $webhook ? $webhook->get_config() : null;
-	}
-
-	/**
-	 * Get all webhook configurations.
-	 *
-	 * @return array<string,array<string,mixed>>
-	 * @phpstan-return array<non-empty-string,array{name: string, allowed_retries: int, timeout: int, enabled: bool, webhook_url: string|null, headers: array<string,string>}>
-	 */
-	public function get_all_configs(): array {
-		$configs = array();
-		foreach ( $this->webhooks as $name => $webhook ) {
-			$configs[ $name ] = $webhook->get_config();
-		}
-		return $configs;
-	}
-
-	/**
 	 * Apply webhook-specific configuration to dispatcher arguments.
 	 *
 	 * This method allows webhooks to customize the HTTP request arguments

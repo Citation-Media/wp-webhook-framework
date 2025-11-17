@@ -13,7 +13,7 @@ namespace Citation\WP_Webhook_Framework;
  * Base webhook class with configuration capabilities.
  *
  * Provides configuration methods for webhook behavior including retry policies,
- * timeout settings, and other webhook-specific configurations. Stateless.
+ * timeout settings, and other webhook-specific configurations.
  */
 abstract class Webhook {
 
@@ -64,6 +64,8 @@ abstract class Webhook {
 	 */
 	protected array $headers = array();
 
+	protected array $payload = array();
+
 	/**
 	 * Constructor.
 	 *
@@ -72,6 +74,7 @@ abstract class Webhook {
 	 */
 	public function __construct( string $name ) {
 		$this->name = $name;
+		$this->headers['wpwf-webhook-name'] = $name;
 	}
 
 	/**
@@ -192,6 +195,16 @@ abstract class Webhook {
 		return $this->headers;
 	}
 
+	public function get_payload(): array
+	{
+		return $this->payload;
+	}
+
+	public function set_payload(array $payload): void
+	{
+		$this->payload = $payload;
+	}
+
 	/**
 	 * Initialize the webhook (register hooks, etc.).
 	 *
@@ -203,32 +216,21 @@ abstract class Webhook {
 	 * Emit a webhook with the given parameters.
 	 *
 	 * Schedules a webhook delivery via the Dispatcher using this webhook's configuration.
+	 * Passes the webhook instance for strongly-typed configuration access.
 	 *
 	 * @param string              $action      The action type (create, update, delete).
 	 * @param string              $entity_type The entity type (post, term, user, meta).
 	 * @param int|string          $entity_id   The entity ID.
-	 * @param array<string,mixed> $payload     The payload data.
 	 */
-	protected function emit( string $action, string $entity_type, int|string $entity_id, array $payload ): void {
+	protected function emit( string $action, string $entity_type, int|string $entity_id ): void {
 		$registry = Webhook_Registry::instance();
 		$dispatcher = $registry->get_dispatcher();
-		$dispatcher->schedule( $action, $entity_type, $entity_id, $payload, $this->name );
-	}
 
-	/**
-	 * Get the webhook configuration as an array.
-	 *
-	 * @return array<string,mixed>
-	 * @phpstan-return array{name: string, allowed_retries: int, timeout: int, enabled: bool, webhook_url: string|null, headers: array<string,string>}
-	 */
-	public function get_config(): array {
-		return array(
-			'name'            => $this->name,
-			'allowed_retries' => $this->allowed_retries,
-			'timeout'         => $this->timeout,
-			'enabled'         => $this->enabled,
-			'webhook_url'     => $this->webhook_url,
-			'headers'         => $this->headers,
-		);
+		try {
+			$dispatcher->schedule( $this->get_webhook_url(), $action, $entity_type, $entity_id, $this->get_payload(), $this->get_headers() );
+		} catch ( \WP_Exception $e ) {
+			trigger_error(sprintf('Failed to schedule webhook "%s": %s', $this->name, $e->getMessage()), E_USER_WARNING);
+		}
+
 	}
 }

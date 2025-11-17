@@ -23,11 +23,19 @@
 ## Architecture
 Entity-based webhook framework using registry pattern. Webhooks extend abstract `Webhook` class, implement `init()` method, and register via `Service_Provider`.
 
-**Webhook Statelessness Rule**: Webhook instances are singletons registered in the registry and MUST remain stateless. Never store per-emission data (payloads, dynamic headers) as instance properties. Pass emission-specific data as parameters to `emit()`. Only configuration data set during `init()` (via `allowed_retries()`, `timeout()`, `webhook_url()`, `headers()`) should use instance properties.
-
-**Core structure**: See @README.md#architecture-overview for detailed explanation of core classes and data flow.
+**Core structure**: See @README.md for architecture overview and quick examples.
 
 ## Documentation
 - **Location**: Add all documentation to `/docs` directory
 - **Style**: Keep docs brief but fully describe functionality—no unnecessary prose, just essential details
 - **Maintenance**: After making changes to functionality, architecture, or APIs, update relevant documentation in `/docs` to keep it current
+
+## Reference Documentation
+Add new docs with an "@" mention to the "AGENTS.md" including a quick explanation. Keep the docs always up to date.
+- @README.md - Quick start, basic usage, architecture overview
+- @docs/custom-webhooks.md - Creating and registering custom webhooks, registry pattern
+- @docs/hooks-and-filters.md - All available hooks, filters with examples (includes newly documented `wpwf_headers` filter)
+- @docs/configuration.md - Constants, configuration methods, precedence rules
+- @docs/third-party-integration.md - WooCommerce, ACF, CF7, Gravity Forms, EDD integration examples
+- @docs/webhook-statefulness.md - Webhook statefulness rules and best practices
+- @docs/failure-handling.md - Failure monitoring, blocking behavior, email notifications

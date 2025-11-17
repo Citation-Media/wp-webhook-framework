@@ -44,9 +44,9 @@ class Meta extends Entity_Handler {
 	 *
 	 * Initializes the Meta handler with a dispatcher and entity handlers.
 	 *
-	 * @param Post       $post_handler Post handler instance.
-	 * @param Term       $term_handler Term handler instance.
-	 * @param User       $user_handler User handler instance.
+	 * @param Post $post_handler Post handler instance.
+	 * @param Term $term_handler Term handler instance.
+	 * @param User $user_handler User handler instance.
 	 */
 	public function __construct( Post $post_handler, Term $term_handler, User $user_handler ) {
 		$this->post_handler = $post_handler;
@@ -61,7 +61,7 @@ class Meta extends Entity_Handler {
 	 * @param mixed $old_value The old value.
 	 * @return bool True if this represents a deletion.
 	 */
-	public function is_deletion(mixed $new_value, mixed $old_value ): bool {
+	public function is_deletion( mixed $new_value, mixed $old_value ): bool {
 		// If new value is empty/null and old value existed, it's a deletion
 		return empty( $new_value ) && ! empty( $old_value );
 	}

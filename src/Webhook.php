@@ -73,7 +73,7 @@ abstract class Webhook {
 	 * @phpstan-param non-empty-string $name
 	 */
 	public function __construct( string $name ) {
-		$this->name = $name;
+		$this->name                         = $name;
 		$this->headers['wpwf-webhook-name'] = $name;
 	}
 
@@ -195,13 +195,11 @@ abstract class Webhook {
 		return $this->headers;
 	}
 
-	public function get_payload(): array
-	{
+	public function get_payload(): array {
 		return $this->payload;
 	}
 
-	public function set_payload(array $payload): void
-	{
+	public function set_payload( array $payload ): void {
 		$this->payload = $payload;
 	}
 
@@ -218,19 +216,18 @@ abstract class Webhook {
 	 * Schedules a webhook delivery via the Dispatcher using this webhook's configuration.
 	 * Passes the webhook instance for strongly-typed configuration access.
 	 *
-	 * @param string              $action      The action type (create, update, delete).
-	 * @param string              $entity_type The entity type (post, term, user, meta).
-	 * @param int|string          $entity_id   The entity ID.
+	 * @param string     $action      The action type (create, update, delete).
+	 * @param string     $entity_type The entity type (post, term, user, meta).
+	 * @param int|string $entity_id   The entity ID.
 	 */
 	protected function emit( string $action, string $entity_type, int|string $entity_id ): void {
-		$registry = Webhook_Registry::instance();
+		$registry   = Webhook_Registry::instance();
 		$dispatcher = $registry->get_dispatcher();
 
 		try {
 			$dispatcher->schedule( $this->get_webhook_url(), $action, $entity_type, $entity_id, $this->get_payload(), $this->get_headers() );
 		} catch ( \WP_Exception $e ) {
-			trigger_error(sprintf('Failed to schedule webhook "%s": %s', $this->name, $e->getMessage()), E_USER_WARNING);
+			trigger_error( sprintf( 'Failed to schedule webhook "%s": %s', $this->name, $e->getMessage() ), E_USER_WARNING );
 		}
-
 	}
 }

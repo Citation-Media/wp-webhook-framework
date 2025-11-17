@@ -217,8 +217,8 @@ class Meta_Webhook extends Webhook {
 	 * @param mixed  $old_value  The old value.
 	 */
 	private function on_meta_update( string $meta_type, int $object_id, string $meta_key, mixed $new_value, mixed $old_value = null ): void {
-		// No change, do nothing (use loose equality for value comparison)
-		// phpcs:ignore WordPress.PHP.StrictComparisons.LooseComparison -- Intentional loose comparison for meta values
+		// No change, do nothing (ALWAYS use loose equality for value comparison)
+		// phpcs:ignore WordPress.PHP.StrictComparisons.LooseComparison,Universal.Operators.StrictComparisons.LooseEqual
 		if ( $new_value == $old_value ) {
 			return;
 		}
@@ -262,7 +262,7 @@ class Meta_Webhook extends Webhook {
 
 		// Get entity payload without meta_key
 		$entity_payload = $this->meta_handler->get_entity_payload( $meta_type, $object_id );
-		$parent_webhook->emit('update', $meta_type, $object_id, $entity_payload);
+		$parent_webhook->emit( 'update', $meta_type, $object_id, $entity_payload );
 	}
 
 	/**

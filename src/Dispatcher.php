@@ -23,6 +23,7 @@ class Dispatcher {
 	 * Accepts a Webhook instance for strongly-typed configuration access during scheduling.
 	 * Only the webhook name is persisted to Action Scheduler for later lookup.
 	 *
+	 * @param string              $url     The webhook URL.
 	 * @param string              $action  The action type.
 	 * @param string              $entity  The entity type.
 	 * @param int|string          $id      The entity ID.

@@ -40,22 +40,7 @@ class Meta_Webhook extends Webhook {
 	 */
 	public function __construct( string $name = 'meta' ) {
 		parent::__construct( $name );
-
-		// Get dispatcher and handlers from registry
-		$registry   = Webhook_Registry::instance();
-		$dispatcher = $registry->get_dispatcher();
-
-		// We need access to other handlers for Meta handler
-		$post_webhook = $registry->get( 'post' );
-		$term_webhook = $registry->get( 'term' );
-		$user_webhook = $registry->get( 'user' );
-
-		// If other webhooks aren't registered yet, create temporary handlers
-		$post_handler = $post_webhook ? $post_webhook->get_handler() : new Post();
-		$term_handler = $term_webhook ? $term_webhook->get_handler() : new Term();
-		$user_handler = $user_webhook ? $user_webhook->get_handler() : new User();
-
-		$this->meta_handler = new Meta( $post_handler, $term_handler, $user_handler );
+		$this->meta_handler = new Meta();
 	}
 
 	/**
@@ -250,19 +235,17 @@ class Meta_Webhook extends Webhook {
 	 * @param int    $object_id The object ID.
 	 */
 	private function trigger_entity_update( string $meta_type, int $object_id ): void {
-		$registry   = Webhook_Registry::instance();
-		$dispatcher = $registry->get_dispatcher();
+		$registry = Webhook_Registry::instance();
 
 		// Get the parent entity webhook instance
 		$parent_webhook = $registry->get( $meta_type );
-
 		if ( ! $parent_webhook ) {
 			return;
 		}
 
 		// Get entity payload without meta_key
-		$entity_payload = $this->meta_handler->get_entity_payload( $meta_type, $object_id );
-		$parent_webhook->emit( 'update', $meta_type, $object_id, $entity_payload );
+		$parent_webhook->set_payload( $this->meta_handler->get_entity_payload( $meta_type, $object_id ) );
+		$parent_webhook->emit( 'update', $meta_type, $object_id );
 	}
 
 	/**

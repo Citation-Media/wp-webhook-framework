@@ -43,15 +43,11 @@ class Meta extends Entity_Handler {
 	 * Constructor for Meta handler.
 	 *
 	 * Initializes the Meta handler with a dispatcher and entity handlers.
-	 *
-	 * @param Post $post_handler Post handler instance.
-	 * @param Term $term_handler Term handler instance.
-	 * @param User $user_handler User handler instance.
 	 */
-	public function __construct( Post $post_handler, Term $term_handler, User $user_handler ) {
-		$this->post_handler = $post_handler;
-		$this->term_handler = $term_handler;
-		$this->user_handler = $user_handler;
+	public function __construct() {
+		$this->post_handler = new Post();
+		$this->term_handler = new Term();
+		$this->user_handler = new User();
 	}
 
 	/**

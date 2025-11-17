@@ -11,7 +11,6 @@ namespace Citation\WP_Webhook_Framework\Webhooks;
 
 use Citation\WP_Webhook_Framework\Webhook;
 use Citation\WP_Webhook_Framework\Entities\Post;
-use Citation\WP_Webhook_Framework\Webhook_Registry;
 
 /**
  * Post webhook implementation with configuration capabilities.
@@ -65,9 +64,9 @@ class Post_Webhook extends Webhook {
 			return;
 		}
 
-		$action = $update ? 'update' : 'create';
-		$this->set_payload( $this->post_handler->prepare_payload( $post_id ) );
-		$this->emit( $action, 'post', $post_id );
+		$action  = $update ? 'update' : 'create';
+		$payload = $this->post_handler->prepare_payload( $post_id );
+		$this->emit( $action, 'post', $post_id, $payload );
 	}
 
 	/**
@@ -76,8 +75,8 @@ class Post_Webhook extends Webhook {
 	 * @param int $post_id The post ID.
 	 */
 	public function on_delete_post( int $post_id ): void {
-		$this->set_payload( $this->post_handler->prepare_payload( $post_id ) );
-		$this->emit( 'delete', 'post', $post_id );
+		$payload = $this->post_handler->prepare_payload( $post_id );
+		$this->emit( 'delete', 'post', $post_id, $payload );
 	}
 
 	/**

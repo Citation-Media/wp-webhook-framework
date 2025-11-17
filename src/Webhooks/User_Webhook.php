@@ -11,7 +11,6 @@ namespace Citation\WP_Webhook_Framework\Webhooks;
 
 use Citation\WP_Webhook_Framework\Webhook;
 use Citation\WP_Webhook_Framework\Entities\User;
-use Citation\WP_Webhook_Framework\Webhook_Registry;
 
 /**
  * User webhook implementation with configuration capabilities.
@@ -60,8 +59,8 @@ class User_Webhook extends Webhook {
 	 * @param int $user_id The user ID.
 	 */
 	public function on_user_register( int $user_id ): void {
-		$this->set_payload( $this->user_handler->prepare_payload( $user_id ) );
-		$this->emit( 'create', 'user', $user_id );
+		$payload = $this->user_handler->prepare_payload( $user_id );
+		$this->emit( 'create', 'user', $user_id, $payload );
 	}
 
 	/**
@@ -70,8 +69,8 @@ class User_Webhook extends Webhook {
 	 * @param int $user_id The user ID.
 	 */
 	public function on_profile_update( int $user_id ): void {
-		$this->set_payload( $this->user_handler->prepare_payload( $user_id ) );
-		$this->emit( 'update', 'user', $user_id );
+		$payload = $this->user_handler->prepare_payload( $user_id );
+		$this->emit( 'update', 'user', $user_id, $payload );
 	}
 
 	/**
@@ -80,8 +79,8 @@ class User_Webhook extends Webhook {
 	 * @param int $user_id The user ID.
 	 */
 	public function on_deleted_user( int $user_id ): void {
-		$this->set_payload( $this->user_handler->prepare_payload( $user_id ) );
-		$this->emit( 'delete', 'user', $user_id );
+		$payload = $this->user_handler->prepare_payload( $user_id );
+		$this->emit( 'delete', 'user', $user_id, $payload );
 	}
 
 	/**

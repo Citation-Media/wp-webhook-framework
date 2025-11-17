@@ -59,18 +59,12 @@ abstract class Webhook {
 	/**
 	 * Additional HTTP headers for webhook requests.
 	 *
+	 * Stateless configuration set during init(), not per-emission data.
+	 *
 	 * @var array<string,string>
 	 * @phpstan-var array<non-empty-string,non-empty-string>
 	 */
 	protected array $headers = array();
-
-	/**
-	 * The webhook payload data.
-	 *
-	 * @var array<string,mixed>
-	 * @phpstan-var array<string,mixed>
-	 */
-	protected array $payload = array();
 
 	/**
 	 * Constructor.
@@ -195,30 +189,12 @@ abstract class Webhook {
 	/**
 	 * Get additional HTTP headers.
 	 *
+	 * Returns stateless configuration headers set during init().
+	 *
 	 * @return array<string,string>
 	 */
 	public function get_headers(): array {
 		return $this->headers;
-	}
-
-	/**
-	 * Get the webhook payload data.
-	 *
-	 * @return array<string,mixed>
-	 * @phpstan-return array<string,mixed>
-	 */
-	public function get_payload(): array {
-		return $this->payload;
-	}
-
-	/**
-	 * Set the webhook payload data.
-	 *
-	 * @param array<string,mixed> $payload The payload data.
-	 * @phpstan-param array<string,mixed> $payload
-	 */
-	public function set_payload( array $payload ): void {
-		$this->payload = $payload;
 	}
 
 	/**
@@ -232,18 +208,23 @@ abstract class Webhook {
 	 * Emit a webhook with the given parameters.
 	 *
 	 * Schedules a webhook delivery via the Dispatcher using this webhook's configuration.
-	 * Passes the webhook instance for strongly-typed configuration access.
+	 * Payload and headers passed as parameters are merged with configured headers.
 	 *
-	 * @param string     $action      The action type (create, update, delete).
-	 * @param string     $entity_type The entity type (post, term, user, meta).
-	 * @param int|string $entity_id   The entity ID.
+	 * @param string              $action      The action type (create, update, delete).
+	 * @param string              $entity_type The entity type (post, term, user, meta).
+	 * @param int|string          $entity_id   The entity ID.
+	 * @param array<string,mixed> $payload     Dynamic payload data for this emission.
+	 * @param array<string,mixed> $headers     Optional dynamic headers (merged with get_headers()).
 	 */
-	protected function emit( string $action, string $entity_type, int|string $entity_id ): void {
+	protected function emit( string $action, string $entity_type, int|string $entity_id, array $payload = array(), array $headers = array() ): void {
 		$registry   = Webhook_Registry::instance();
 		$dispatcher = $registry->get_dispatcher();
 
+		// Merge passed headers with configured headers (passed headers take precedence)
+		$final_headers = array_merge( $this->get_headers(), $headers );
+
 		try {
-			$dispatcher->schedule( $this->get_webhook_url(), $action, $entity_type, $entity_id, $this->get_payload(), $this->get_headers() );
+			$dispatcher->schedule( $this->get_webhook_url(), $action, $entity_type, $entity_id, $payload, $final_headers );
 		} catch ( \WP_Exception $e ) {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error, WordPress.Security.EscapeOutput.OutputNotEscaped -- Error handling context, no escaping needed.
 			trigger_error( sprintf( 'Failed to schedule webhook "%s": %s', $this->name, $e->getMessage() ), E_USER_WARNING );

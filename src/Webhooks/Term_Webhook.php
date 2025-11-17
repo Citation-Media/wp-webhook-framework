@@ -11,7 +11,6 @@ namespace Citation\WP_Webhook_Framework\Webhooks;
 
 use Citation\WP_Webhook_Framework\Webhook;
 use Citation\WP_Webhook_Framework\Entities\Term;
-use Citation\WP_Webhook_Framework\Webhook_Registry;
 
 /**
  * Term webhook implementation with configuration capabilities.
@@ -62,8 +61,8 @@ class Term_Webhook extends Webhook {
 	 * @param string $taxonomy The taxonomy name.
 	 */
 	public function on_created_term( int $term_id, int $tt_id, string $taxonomy ): void {
-		$this->set_payload( $this->term_handler->prepare_payload( $term_id ) );
-		$this->emit( 'create', 'term', $term_id );
+		$payload = $this->term_handler->prepare_payload( $term_id );
+		$this->emit( 'create', 'term', $term_id, $payload );
 	}
 
 	/**
@@ -74,8 +73,8 @@ class Term_Webhook extends Webhook {
 	 * @param string $taxonomy The taxonomy name.
 	 */
 	public function on_edited_term( int $term_id, int $tt_id, string $taxonomy ): void {
-		$this->set_payload( $this->term_handler->prepare_payload( $term_id ) );
-		$this->emit( 'update', 'term', $term_id );
+		$payload = $this->term_handler->prepare_payload( $term_id );
+		$this->emit( 'update', 'term', $term_id, $payload );
 	}
 
 	/**
@@ -86,8 +85,8 @@ class Term_Webhook extends Webhook {
 	 * @param string $taxonomy The taxonomy name.
 	 */
 	public function on_deleted_term( int $term_id, int $tt_id, string $taxonomy ): void {
-		$this->set_payload( $this->term_handler->prepare_payload( $term_id ) );
-		$this->emit( 'delete', 'term', $term_id );
+		$payload = $this->term_handler->prepare_payload( $term_id );
+		$this->emit( 'delete', 'term', $term_id, $payload );
 	}
 
 	/**

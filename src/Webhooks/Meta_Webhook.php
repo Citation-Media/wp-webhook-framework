@@ -218,8 +218,8 @@ class Meta_Webhook extends Webhook {
 		$action      = $is_deletion ? 'delete' : 'update';
 
 		// Emit meta-level webhook with meta_key in payload
-		$this->set_payload( $this->meta_handler->prepare_payload( $meta_type, $object_id, $meta_key ) );
-		$this->emit( $action, 'meta', $object_id );
+		$payload = $this->meta_handler->prepare_payload( $meta_type, $object_id, $meta_key );
+		$this->emit( $action, 'meta', $object_id, $payload );
 
 		// Trigger upstream entity-level update webhook
 		$this->trigger_entity_update( $meta_type, $object_id );
@@ -243,9 +243,9 @@ class Meta_Webhook extends Webhook {
 			return;
 		}
 
-		// Get entity payload without meta_key
-		$parent_webhook->set_payload( $this->meta_handler->get_entity_payload( $meta_type, $object_id ) );
-		$parent_webhook->emit( 'update', $meta_type, $object_id );
+		// Get entity payload without meta_key and pass directly to emit
+		$payload = $this->meta_handler->get_entity_payload( $meta_type, $object_id );
+		$parent_webhook->emit( 'update', $meta_type, $object_id, $payload );
 	}
 
 	/**

@@ -22,11 +22,11 @@ use Citation\WP_Webhook_Framework\Webhook_Registry;
 class Post_Webhook extends Webhook {
 
 	/**
-	 * The post emitter instance.
+	 * The post handler instance.
 	 *
 	 * @var Post
 	 */
-	private Post $post_emitter;
+	private Post $post_handler;
 
 	/**
 	 * Constructor.
@@ -39,7 +39,7 @@ class Post_Webhook extends Webhook {
 		
 		// Get dispatcher from registry
 		$registry = Webhook_Registry::instance();
-		$this->post_emitter = new Post( $registry->get_dispatcher() );
+		$this->post_handler = new Post( $registry->get_dispatcher() );
 	}
 
 	/**
@@ -50,16 +50,43 @@ class Post_Webhook extends Webhook {
 			return;
 		}
 
-		add_action( 'save_post', array( $this->post_emitter, 'on_save_post' ), 10, 3 );
-		add_action( 'before_delete_post', array( $this->post_emitter, 'on_delete_post' ), 10, 1 );
+		add_action( 'save_post', array( $this, 'on_save_post' ), 10, 3 );
+		add_action( 'before_delete_post', array( $this, 'on_delete_post' ), 10, 1 );
 	}
 
 	/**
-	 * Get the post emitter instance.
+	 * Handle post save event (create/update).
+	 *
+	 * @param int      $post_id The post ID.
+	 * @param \WP_Post $post    The post object.
+	 * @param bool     $update  Whether this is an update or new post.
+	 */
+	public function on_save_post( int $post_id, \WP_Post $post, bool $update ): void {
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+
+		$action = $update ? 'update' : 'create';
+		$payload = $this->post_handler->prepare_payload( $post_id );
+		$this->emit( $action, 'post', $post_id, $payload );
+	}
+
+	/**
+	 * Handle post deletion event.
+	 *
+	 * @param int $post_id The post ID.
+	 */
+	public function on_delete_post( int $post_id ): void {
+		$payload = $this->post_handler->prepare_payload( $post_id );
+		$this->emit( 'delete', 'post', $post_id, $payload );
+	}
+
+	/**
+	 * Get the post handler instance.
 	 *
 	 * @return Post
 	 */
-	public function get_emitter(): Post {
-		return $this->post_emitter;
+	public function get_handler(): Post {
+		return $this->post_handler;
 	}
 }

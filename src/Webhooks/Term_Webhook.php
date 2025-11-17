@@ -22,11 +22,11 @@ use Citation\WP_Webhook_Framework\Webhook_Registry;
 class Term_Webhook extends Webhook {
 
 	/**
-	 * The term emitter instance.
+	 * The term handler instance.
 	 *
 	 * @var Term
 	 */
-	private Term $term_emitter;
+	private Term $term_handler;
 
 	/**
 	 * Constructor.
@@ -39,7 +39,7 @@ class Term_Webhook extends Webhook {
 		
 		// Get dispatcher from registry
 		$registry = Webhook_Registry::instance();
-		$this->term_emitter = new Term( $registry->get_dispatcher() );
+		$this->term_handler = new Term( $registry->get_dispatcher() );
 	}
 
 	/**
@@ -50,17 +50,53 @@ class Term_Webhook extends Webhook {
 			return;
 		}
 
-		add_action( 'created_term', array( $this->term_emitter, 'on_created_term' ), 10, 3 );
-		add_action( 'edited_term', array( $this->term_emitter, 'on_edited_term' ), 10, 3 );
-		add_action( 'delete_term', array( $this->term_emitter, 'on_deleted_term' ), 10, 3 );
+		add_action( 'created_term', array( $this, 'on_created_term' ), 10, 3 );
+		add_action( 'edited_term', array( $this, 'on_edited_term' ), 10, 3 );
+		add_action( 'delete_term', array( $this, 'on_deleted_term' ), 10, 3 );
 	}
 
 	/**
-	 * Get the term emitter instance.
+	 * Handle term creation event.
+	 *
+	 * @param int    $term_id  The term ID.
+	 * @param int    $tt_id    The term taxonomy ID.
+	 * @param string $taxonomy The taxonomy name.
+	 */
+	public function on_created_term( int $term_id, int $tt_id, string $taxonomy ): void {
+		$payload = $this->term_handler->prepare_payload( $term_id );
+		$this->emit( 'create', 'term', $term_id, $payload );
+	}
+
+	/**
+	 * Handle term update event.
+	 *
+	 * @param int    $term_id  The term ID.
+	 * @param int    $tt_id    The term taxonomy ID.
+	 * @param string $taxonomy The taxonomy name.
+	 */
+	public function on_edited_term( int $term_id, int $tt_id, string $taxonomy ): void {
+		$payload = $this->term_handler->prepare_payload( $term_id );
+		$this->emit( 'update', 'term', $term_id, $payload );
+	}
+
+	/**
+	 * Handle term deletion event.
+	 *
+	 * @param int    $term_id  The term ID.
+	 * @param int    $tt_id    The term taxonomy ID.
+	 * @param string $taxonomy The taxonomy name.
+	 */
+	public function on_deleted_term( int $term_id, int $tt_id, string $taxonomy ): void {
+		$payload = $this->term_handler->prepare_payload( $term_id );
+		$this->emit( 'delete', 'term', $term_id, $payload );
+	}
+
+	/**
+	 * Get the term handler instance.
 	 *
 	 * @return Term
 	 */
-	public function get_emitter(): Term {
-		return $this->term_emitter;
+	public function get_handler(): Term {
+		return $this->term_handler;
 	}
 }

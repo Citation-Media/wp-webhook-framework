@@ -200,6 +200,22 @@ abstract class Webhook {
 	abstract public function init(): void;
 
 	/**
+	 * Emit a webhook with the given parameters.
+	 *
+	 * Schedules a webhook delivery via the Dispatcher using this webhook's configuration.
+	 *
+	 * @param string              $action      The action type (create, update, delete).
+	 * @param string              $entity_type The entity type (post, term, user, meta).
+	 * @param int|string          $entity_id   The entity ID.
+	 * @param array<string,mixed> $payload     The payload data.
+	 */
+	protected function emit( string $action, string $entity_type, int|string $entity_id, array $payload ): void {
+		$registry = Webhook_Registry::instance();
+		$dispatcher = $registry->get_dispatcher();
+		$dispatcher->schedule( $action, $entity_type, $entity_id, $payload, $this->name );
+	}
+
+	/**
 	 * Get the webhook configuration as an array.
 	 *
 	 * @return array<string,mixed>

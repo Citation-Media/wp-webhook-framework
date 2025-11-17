@@ -22,11 +22,11 @@ use Citation\WP_Webhook_Framework\Webhook_Registry;
 class User_Webhook extends Webhook {
 
 	/**
-	 * The user emitter instance.
+	 * The user handler instance.
 	 *
 	 * @var User
 	 */
-	private User $user_emitter;
+	private User $user_handler;
 
 	/**
 	 * Constructor.
@@ -39,7 +39,7 @@ class User_Webhook extends Webhook {
 		
 		// Get dispatcher from registry
 		$registry = Webhook_Registry::instance();
-		$this->user_emitter = new User( $registry->get_dispatcher() );
+		$this->user_handler = new User( $registry->get_dispatcher() );
 	}
 
 	/**
@@ -50,17 +50,47 @@ class User_Webhook extends Webhook {
 			return;
 		}
 
-		add_action( 'user_register', array( $this->user_emitter, 'on_user_register' ), 10, 1 );
-		add_action( 'profile_update', array( $this->user_emitter, 'on_profile_update' ), 10, 1 );
-		add_action( 'deleted_user', array( $this->user_emitter, 'on_deleted_user' ), 10, 1 );
+		add_action( 'user_register', array( $this, 'on_user_register' ), 10, 1 );
+		add_action( 'profile_update', array( $this, 'on_profile_update' ), 10, 1 );
+		add_action( 'deleted_user', array( $this, 'on_deleted_user' ), 10, 1 );
 	}
 
 	/**
-	 * Get the user emitter instance.
+	 * Handle user registration event.
+	 *
+	 * @param int $user_id The user ID.
+	 */
+	public function on_user_register( int $user_id ): void {
+		$payload = $this->user_handler->prepare_payload( $user_id );
+		$this->emit( 'create', 'user', $user_id, $payload );
+	}
+
+	/**
+	 * Handle user profile update event.
+	 *
+	 * @param int $user_id The user ID.
+	 */
+	public function on_profile_update( int $user_id ): void {
+		$payload = $this->user_handler->prepare_payload( $user_id );
+		$this->emit( 'update', 'user', $user_id, $payload );
+	}
+
+	/**
+	 * Handle user deletion event.
+	 *
+	 * @param int $user_id The user ID.
+	 */
+	public function on_deleted_user( int $user_id ): void {
+		$payload = $this->user_handler->prepare_payload( $user_id );
+		$this->emit( 'delete', 'user', $user_id, $payload );
+	}
+
+	/**
+	 * Get the user handler instance.
 	 *
 	 * @return User
 	 */
-	public function get_emitter(): User {
-		return $this->user_emitter;
+	public function get_handler(): User {
+		return $this->user_handler;
 	}
 }

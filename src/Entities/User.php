@@ -1,6 +1,6 @@
 <?php
 /**
- * UserEmitter class for handling user-related webhook events.
+ * User entity handler for handling user-related webhook events.
  *
  * @package Citation\WP_Webhook_Framework\Entities
  */
@@ -11,48 +11,22 @@ use Citation\WP_Webhook_Framework\Dispatcher;
 use Citation\WP_Webhook_Framework\Support\Payload;
 
 /**
- * Class UserEmitter
+ * User entity handler.
  *
- * Emits webhooks for user lifecycle and meta changes.
+ * Transforms user data into webhook payloads.
  */
-class User extends Emitter {
-
-
+class User extends Entity_Handler {
 
 	/**
-	 * Handle user registration event.
+	 * Prepare payload for a user.
 	 *
 	 * @param int $user_id The user ID.
+	 * @return array<string,mixed> The prepared payload data.
 	 */
-	public function on_user_register( int $user_id ): void {
-		$this->emit( $user_id, 'create' );
-	}
+	public function prepare_payload( int $user_id ): array {
+		$user  = get_userdata( $user_id );
+		$roles = ( $user && $user->roles ) ? array_values( $user->roles ) : array();
 
-	/**
-	 * Handle user profile update event.
-	 *
-	 * @param int $user_id The user ID.
-	 */
-	public function on_profile_update( int $user_id ): void {
-		$this->emit( $user_id, 'update' );
-	}
-
-	/**
-	 * Emit a webhook for a user action.
-	 *
-	 * @param int    $user_id The user ID.
-	 * @param string $action  The action performed (create/update/delete).
-	 */
-	public function emit( int $user_id, string $action ): void {
-		$this->schedule( $action, 'user', $user_id, Payload::user( $user_id ) );
-	}
-
-	/**
-	 * Handle user deletion event.
-	 *
-	 * @param int $user_id The user ID.
-	 */
-	public function on_deleted_user( int $user_id ): void {
-		$this->emit( $user_id, 'delete' );
+		return array( 'roles' => $roles );
 	}
 }

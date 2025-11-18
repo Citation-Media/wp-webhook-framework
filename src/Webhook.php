@@ -26,12 +26,15 @@ abstract class Webhook {
 	protected string $name;
 
 	/**
-	 * Number of allowed retry attempts.
+	 * Maximum consecutive failures before URL is blocked.
+	 *
+	 * Defines threshold of consecutive failed webhook deliveries before the URL is blocked.
+	 * Default 10 means URL blocks after 10 consecutive failures.
 	 *
 	 * @var int
-	 * @phpstan-var int<0,10>
+	 * @phpstan-var positive-int
 	 */
-	protected int $allowed_retries = 0;
+	protected int $max_consecutive_failures = 10;
 
 	/**
 	 * Request timeout in seconds.
@@ -77,15 +80,17 @@ abstract class Webhook {
 	}
 
 	/**
-	 * Set the number of allowed retry attempts.
+	 * Set maximum consecutive failures before URL blocking.
 	 *
-	 * @param int $retries Number of retry attempts (0-10).
+	 * Defines how many consecutive failed webhook deliveries trigger URL blocking.
+	 *
+	 * @param int $failures Maximum number of consecutive failures allowed.
 	 * @return static
-	 * @phpstan-param positive-int|0 $retries
+	 * @phpstan-param positive-int $failures
 	 * @phpstan-return static
 	 */
-	public function allowed_retries( int $retries ): static {
-		$this->allowed_retries = max( 0, min( 10, $retries ) );
+	public function max_consecutive_failures(int $failures ): static {
+		$this->max_consecutive_failures = max( 1, $failures );
 		return $this;
 	}
 
@@ -150,12 +155,14 @@ abstract class Webhook {
 	}
 
 	/**
-	 * Get the allowed retry count.
+	 * Get the maximum consecutive failures threshold.
+	 *
+	 * Returns how many consecutive failures are allowed before URL is blocked.
 	 *
 	 * @return int
 	 */
-	public function get_allowed_retries(): int {
-		return $this->allowed_retries;
+	public function get_max_consecutive_failures(): int {
+		return $this->max_consecutive_failures;
 	}
 
 	/**

@@ -21,7 +21,7 @@ $registry = \Citation\WP_Webhook_Framework\Service_Provider::get_registry();
 // Configure existing webhooks
 $post_webhook = $registry->get('post');
 if ($post_webhook) {
-    $post_webhook->allowed_retries(5)
+    $post_webhook->max_consecutive_failures(5)
                  ->timeout(60)
                  ->webhook_url('https://api.example.com/posts');
 }
@@ -32,7 +32,7 @@ if ($post_webhook) {
 All webhooks support these chainable configuration methods:
 
 ```php
-$webhook->allowed_retries(5)         // Set retry attempts (0-10)
+$webhook->max_consecutive_failures(5)         // Set retry attempts (0-10)
         ->timeout(60)                // Set timeout in seconds (1-300)
         ->enabled(true)              // Enable/disable webhook
         ->webhook_url('https://...')  // Custom URL for this webhook
@@ -52,7 +52,7 @@ class Custom_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
         parent::__construct('my_custom_webhook');
         
         // Configure webhook behavior
-        $this->allowed_retries(3)
+        $this->max_consecutive_failures(3)
              ->timeout(30)
              ->webhook_url('https://api.example.com/custom')
              ->headers(['Authorization' => 'Bearer token123']);
@@ -98,7 +98,7 @@ class WooCommerce_Order_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
     public function __construct() {
         parent::__construct('woocommerce_orders');
         
-        $this->allowed_retries(3)
+        $this->max_consecutive_failures(3)
              ->timeout(45)
              ->webhook_url('https://api.example.com/woocommerce/orders')
              ->headers(['X-WooCommerce-Webhook' => 'order-events']);
@@ -168,7 +168,7 @@ class ACF_Field_Group_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
     public function __construct() {
         parent::__construct('acf_field_groups');
         
-        $this->allowed_retries(2)
+        $this->max_consecutive_failures(2)
              ->timeout(30)
              ->webhook_url('https://api.example.com/acf/field-groups');
     }

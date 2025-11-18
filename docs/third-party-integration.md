@@ -31,7 +31,7 @@ class WooCommerce_Order_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
     public function __construct() {
         parent::__construct('woocommerce_orders');
         
-        $this->allowed_retries(3)
+        $this->max_consecutive_failures(3)
              ->timeout(45)
              ->webhook_url('https://api.example.com/woocommerce/orders')
              ->headers(['X-WooCommerce-Webhook' => 'order-events']);
@@ -98,7 +98,7 @@ class ACF_Field_Group_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
     public function __construct() {
         parent::__construct('acf_field_groups');
         
-        $this->allowed_retries(2)
+        $this->max_consecutive_failures(2)
              ->timeout(30)
              ->webhook_url('https://api.example.com/acf/field-groups');
     }
@@ -157,7 +157,7 @@ class CF7_Submission_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
     public function __construct() {
         parent::__construct('cf7_submissions');
         
-        $this->allowed_retries(3)
+        $this->max_consecutive_failures(3)
              ->timeout(20)
              ->webhook_url('https://api.example.com/forms/submissions');
     }
@@ -203,7 +203,7 @@ class Gravity_Forms_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
     public function __construct() {
         parent::__construct('gravity_forms');
         
-        $this->allowed_retries(3)
+        $this->max_consecutive_failures(3)
              ->timeout(30)
              ->webhook_url('https://api.example.com/gravity-forms/entries');
     }
@@ -252,7 +252,7 @@ class EDD_Purchase_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
     public function __construct() {
         parent::__construct('edd_purchases');
         
-        $this->allowed_retries(3)
+        $this->max_consecutive_failures(3)
              ->timeout(30)
              ->webhook_url('https://api.example.com/edd/purchases');
     }
@@ -356,7 +356,7 @@ class My_Plugin_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
             : 'https://staging-api.example.com/webhooks';
         
         $this->webhook_url($url)
-             ->allowed_retries(3)
+             ->max_consecutive_failures(3)
              ->timeout(30);
     }
     

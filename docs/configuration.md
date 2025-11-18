@@ -54,7 +54,7 @@ $webhook->webhook_url('https://api.example.com/custom');
 
 **Note:** Overridden by `WP_WEBHOOK_FRAMEWORK_URL` constant if defined.
 
-### `allowed_retries()`
+### `max_consecutive_failures()`
 
 Set the number of retry attempts for failed webhooks.
 
@@ -62,7 +62,7 @@ Set the number of retry attempts for failed webhooks.
 **Default:** 0
 
 ```php
-$webhook->allowed_retries(5); // Retry up to 5 times
+$webhook->max_consecutive_failures(5); // Retry up to 5 times
 ```
 
 ### `timeout()`
@@ -103,7 +103,7 @@ All configuration methods are chainable:
 
 ```php
 $webhook->webhook_url('https://api.example.com')
-        ->allowed_retries(5)
+        ->max_consecutive_failures(5)
         ->timeout(60)
         ->enabled(true)
         ->headers(['Authorization' => 'Bearer token']);
@@ -121,14 +121,14 @@ $registry = \Citation\WP_Webhook_Framework\Service_Provider::get_registry();
 $post_webhook = $registry->get('post');
 if ($post_webhook) {
     $post_webhook->webhook_url('https://api.example.com/posts')
-                 ->allowed_retries(3)
+                 ->max_consecutive_failures(3)
                  ->timeout(30);
 }
 
 $user_webhook = $registry->get('user');
 if ($user_webhook) {
     $user_webhook->webhook_url('https://api.example.com/users')
-                 ->allowed_retries(5)
+                 ->max_consecutive_failures(5)
                  ->timeout(45);
 }
 ```

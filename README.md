@@ -48,7 +48,7 @@ $registry = \Citation\WP_Webhook_Framework\Service_Provider::get_registry();
 $post_webhook = $registry->get('post');
 if ($post_webhook) {
     $post_webhook->webhook_url('https://api.example.com/posts')
-                 ->allowed_retries(5)
+                 ->max_consecutive_failures(5)
                  ->timeout(60);
 }
 ```
@@ -61,7 +61,7 @@ class Custom_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
     public function __construct() {
         parent::__construct('my_custom_webhook');
         
-        $this->allowed_retries(3)
+        $this->max_consecutive_failures(3)
              ->timeout(30)
              ->webhook_url('https://api.example.com/custom')
              ->headers(['Authorization' => 'Bearer token123']);
@@ -122,7 +122,7 @@ See @docs/hooks-and-filters.md for all available hooks and filters.
 ```php
 // Set once during __construct()
 $this->webhook_url('https://api.example.com')
-     ->allowed_retries(5);
+     ->max_consecutive_failures(5);
 ```
 
 **Stateful (emission data):**

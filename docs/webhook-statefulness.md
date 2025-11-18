@@ -14,7 +14,7 @@ Set during `init()` and apply to all emissions from the webhook:
 
 ```php
 public function init(): void {
-    $this->allowed_retries(3)
+    $this->max_consecutive_failures(3)
          ->timeout(60)
          ->webhook_url('https://api.example.com/endpoint')
          ->headers(['Authorization' => 'Bearer token123']);
@@ -22,7 +22,7 @@ public function init(): void {
 ```
 
 Configuration methods:
-- `allowed_retries()` - Retry policy
+- `max_consecutive_failures()` - Retry policy
 - `timeout()` - Request timeout
 - `enabled()` - Enable/disable webhook
 - `webhook_url()` - Custom endpoint URL
@@ -81,7 +81,7 @@ public function on_save_post(int $post_id, \WP_Post $post, bool $update): void {
 
 | Data Type | Storage Location | Set During | Example |
 |-----------|------------------|------------|---------|
-| Configuration | Instance properties | `init()` | `timeout()`, `allowed_retries()`, static headers |
+| Configuration | Instance properties | `init()` | `timeout()`, `max_consecutive_failures()`, static headers |
 | Emission Data | Method parameters | Hook callbacks | Payloads, dynamic headers |
 
 Following this pattern ensures your webhook implementations are thread-safe, predictable, and maintainable.

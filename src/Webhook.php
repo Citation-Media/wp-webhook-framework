@@ -51,10 +51,9 @@ abstract class Webhook {
 	/**
 	 * Custom webhook URL (optional).
 	 *
-	 * @var string|null
-	 * @phpstan-var non-empty-string|null
+	 * @var string
 	 */
-	protected ?string $webhook_url = null;
+	protected string $webhook_url = "";
 
 	/**
 	 * Additional HTTP headers for webhook requests.
@@ -180,9 +179,9 @@ abstract class Webhook {
 	/**
 	 * Get the custom webhook URL if set.
 	 *
-	 * @return string|null
+	 * @return string
 	 */
-	public function get_webhook_url(): ?string {
+	public function get_webhook_url(): string {
 		return $this->webhook_url;
 	}
 
@@ -224,7 +223,7 @@ abstract class Webhook {
 		$final_headers = array_merge( $this->get_headers(), $headers );
 
 		try {
-			$dispatcher->schedule( $this->get_webhook_url(), $action, $entity_type, $entity_id, $payload, $final_headers );
+			$dispatcher->schedule( $action, $entity_type, $entity_id, $this->get_webhook_url(), $payload, $final_headers );
 		} catch ( \WP_Exception $e ) {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error, WordPress.Security.EscapeOutput.OutputNotEscaped -- Error handling context, no escaping needed.
 			trigger_error( sprintf( 'Failed to schedule webhook "%s": %s', $this->name, $e->getMessage() ), E_USER_WARNING );

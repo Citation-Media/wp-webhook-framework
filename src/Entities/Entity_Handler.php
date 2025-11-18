@@ -9,8 +9,6 @@ declare(strict_types=1);
 
 namespace Citation\WP_Webhook_Framework\Entities;
 
-use Citation\WP_Webhook_Framework\Dispatcher;
-
 /**
  * Abstract base class for entity handlers.
  *

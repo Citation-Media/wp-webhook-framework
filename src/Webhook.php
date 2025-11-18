@@ -158,29 +158,52 @@ abstract class Webhook {
 	 * Get the maximum consecutive failures threshold.
 	 *
 	 * Returns how many consecutive failures are allowed before URL is blocked.
+	 * Applies 'wpwf_max_consecutive_failures' filter for runtime modification.
 	 *
 	 * @return int
 	 */
 	public function get_max_consecutive_failures(): int {
-		return $this->max_consecutive_failures;
+		/**
+		 * Filter the maximum consecutive failures threshold.
+		 *
+		 * @param int    $max_failures The maximum consecutive failures threshold.
+		 * @param string $webhook_name The webhook name/identifier.
+		 */
+		return (int) apply_filters( 'wpwf_max_consecutive_failures', $this->max_consecutive_failures, $this->name );
 	}
 
 	/**
 	 * Get the request timeout.
 	 *
+	 * Applies 'wpwf_timeout' filter for runtime modification.
+	 *
 	 * @return int
 	 */
 	public function get_timeout(): int {
-		return $this->timeout;
+		/**
+		 * Filter the webhook request timeout in seconds.
+		 *
+		 * @param int    $timeout      The timeout in seconds (1-300).
+		 * @param string $webhook_name The webhook name/identifier.
+		 */
+		return (int) apply_filters( 'wpwf_timeout', $this->timeout, $this->name );
 	}
 
 	/**
 	 * Check if this webhook is enabled.
 	 *
+	 * Applies 'wpwf_webhook_enabled' filter for runtime modification.
+	 *
 	 * @return bool
 	 */
 	public function is_enabled(): bool {
-		return $this->enabled;
+		/**
+		 * Filter whether the webhook is enabled.
+		 *
+		 * @param bool   $enabled      Whether the webhook is enabled.
+		 * @param string $webhook_name The webhook name/identifier.
+		 */
+		return (bool) apply_filters( 'wpwf_webhook_enabled', $this->enabled, $this->name );
 	}
 
 	/**

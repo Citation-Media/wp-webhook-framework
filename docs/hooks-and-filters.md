@@ -198,6 +198,107 @@ add_filter('wpwf_failure_notification_email', function($email_data, $url, $respo
 }, 10, 3);
 ```
 
+### `wpwf_max_consecutive_failures`
+
+Filter the maximum consecutive failures threshold before URL blocking. Allows dynamic threshold per webhook.
+
+**Parameters:**
+- `$max_failures` (int) - The maximum consecutive failures threshold
+- `$webhook_name` (string) - The webhook name/identifier
+
+**Example - Different thresholds per webhook:**
+```php
+add_filter('wpwf_max_consecutive_failures', function($max_failures, $webhook_name) {
+    if ($webhook_name === 'critical_webhook') {
+        return 3; // Block after 3 failures for critical webhooks
+    }
+    return $max_failures; // Use default for others
+}, 10, 2);
+```
+
+**Example - Environment-based thresholds:**
+```php
+add_filter('wpwf_max_consecutive_failures', function($max_failures, $webhook_name) {
+    if (wp_get_environment_type() === 'development') {
+        return 100; // Very lenient in development
+    }
+    return $max_failures;
+}, 10, 2);
+```
+
+### `wpwf_timeout`
+
+Filter webhook request timeout in seconds. Allows dynamic timeout configuration per webhook.
+
+**Parameters:**
+- `$timeout` (int) - The timeout in seconds (1-300)
+- `$webhook_name` (string) - The webhook name/identifier
+
+**Example - Longer timeout for specific webhooks:**
+```php
+add_filter('wpwf_timeout', function($timeout, $webhook_name) {
+    if ($webhook_name === 'bulk_sync_webhook') {
+        return 120; // 2 minutes for bulk operations
+    }
+    return $timeout;
+}, 10, 2);
+```
+
+**Example - Adjust timeout based on server load:**
+```php
+add_filter('wpwf_timeout', function($timeout, $webhook_name) {
+    $server_load = sys_getloadavg()[0];
+    if ($server_load > 5.0) {
+        return min(300, $timeout * 2); // Double timeout under high load
+    }
+    return $timeout;
+}, 10, 2);
+```
+
+### `wpwf_webhook_enabled`
+
+Filter whether a webhook is enabled. Allows dynamic enabling/disabling based on conditions.
+
+**Parameters:**
+- `$enabled` (bool) - Whether the webhook is enabled
+- `$webhook_name` (string) - The webhook name/identifier
+
+**Example - Disable webhooks in maintenance mode:**
+```php
+add_filter('wpwf_webhook_enabled', function($enabled, $webhook_name) {
+    if (defined('WP_MAINTENANCE_MODE') && WP_MAINTENANCE_MODE) {
+        return false; // Disable all webhooks during maintenance
+    }
+    return $enabled;
+}, 10, 2);
+```
+
+**Example - Conditional webhook enabling:**
+```php
+add_filter('wpwf_webhook_enabled', function($enabled, $webhook_name) {
+    // Only enable user webhooks if sync is active
+    if (str_contains($webhook_name, 'user') && !get_option('user_sync_enabled')) {
+        return false;
+    }
+    return $enabled;
+}, 10, 2);
+```
+
+**Example - Time-based webhook control:**
+```php
+add_filter('wpwf_webhook_enabled', function($enabled, $webhook_name) {
+    // Disable heavy webhooks during business hours (9am-5pm)
+    if ($webhook_name === 'heavy_sync_webhook') {
+        $hour = (int) current_time('H');
+        if ($hour >= 9 && $hour < 17) {
+            return false;
+        }
+    }
+    return $enabled;
+}, 10, 2);
+```
+
+
 ## Payload Structure
 
 Standard payload sent with all webhooks:

@@ -64,7 +64,7 @@ abstract class Webhook {
 	 *
 	 * @var string
 	 */
-	protected string $webhook_url = "";
+	protected string $webhook_url = '';
 
 	/**
 	 * Additional HTTP headers for webhook requests.
@@ -97,7 +97,7 @@ abstract class Webhook {
 	 * @phpstan-param positive-int $failures
 	 * @phpstan-return static
 	 */
-	public function max_consecutive_failures(int $failures ): static {
+	public function max_consecutive_failures( int $failures ): static {
 		$this->max_consecutive_failures = max( 1, $failures );
 		return $this;
 	}

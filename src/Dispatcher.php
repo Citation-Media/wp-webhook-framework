@@ -31,7 +31,7 @@ class Dispatcher {
 	 *
 	 * @throws WP_Exception If Action Scheduler is not active or URL/payload issues.
 	 */
-	public function schedule( string $action, string $entity, int|string $id, string $url = "", array $payload = array(), array $headers = array() ): void {
+	public function schedule( string $action, string $entity, int|string $id, string $url = '', array $payload = array(), array $headers = array() ): void {
 
 		if ( ! function_exists( 'as_schedule_single_action' ) || ! function_exists( 'as_get_scheduled_actions' ) ) {
 			throw new WP_Exception( 'action_scheduler_not_active' );
@@ -174,8 +174,8 @@ class Dispatcher {
 	 * Tracks failed webhook events (not individual retry attempts) for blocking decisions.
 	 * Each webhook event that fails (after Action Scheduler retries) increments the counter by 1.
 	 *
-	 * @param string       $url      The webhook URL.
-	 * @param mixed        $response The response from wp_remote_post.
+	 * @param string  $url      The webhook URL.
+	 * @param mixed   $response The response from wp_remote_post.
 	 * @param Webhook $webhook  Webhook instance for configuration.
 	 *
 	 * @throws WP_Exception Always throws to mark Action Scheduler action as failed.

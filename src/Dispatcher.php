@@ -168,29 +168,32 @@ class Dispatcher {
 	/**
 	 * Handle failed webhook delivery.
 	 *
-	 * @param string $url The webhook URL.
-	 * @param mixed $response The response from wp_remote_post.
-	 * @param Webhook|null $webhook Optional webhook instance for configuration.
-	 * @throws WP_Exception If maximum retries reached.
+	 * Tracks failed webhook events (not individual retry attempts) for blocking decisions.
+	 * Each webhook event that fails (after Action Scheduler retries) increments the counter by 1.
+	 *
+	 * @param string       $url      The webhook URL.
+	 * @param mixed        $response The response from wp_remote_post.
+	 * @param Webhook $webhook  Webhook instance for configuration.
+	 *
+	 * @throws WP_Exception Always throws to mark Action Scheduler action as failed.
 	 */
-	private function trigger_webhook_failure(string $url, $response, ?Webhook $webhook = null ): void {
+	private function trigger_webhook_failure( string $url, $response, Webhook $webhook ): void {
 
+		// Increment consecutive failure count
 		$failure_dto = Failure::from_transient( $url );
 		$failure_dto->increment_count();
 		$failure_dto->save( $url );
 
-		// Send notification email on first failure after retries exhausted
-		if ( $failure_dto->get_count() >= ( $webhook->get_allowed_retries() ) ) {
-			$this->send_failure_notification( $url, $response );
-			throw new WP_Exception( 'Maximum retries reached.' );
-		}
+		// Get max consecutive failures threshold
+		$max_failures = $webhook->get_max_consecutive_failures();
 
-		// Block URL if more than 10 consecutive failures in 1 hour
-		if ( $failure_dto->get_count() > 10 && ! $failure_dto->is_blocked() ) {
+		// Block URL and send notification if consecutive failures reach threshold
+		if ( $failure_dto->get_count() >= $max_failures && ! $failure_dto->is_blocked() ) {
 			$this->block_url( $url );
+			$this->send_failure_notification( $url, $response, $max_failures );
 		}
 
-		// Throw exception to mark Action Scheduler action as failed
+		// Throw exception to mark Action Scheduler action as failed (triggers AS retry)
 		throw new WP_Exception( 'webhook_delivery_failed' );
 	}
 
@@ -228,10 +231,11 @@ class Dispatcher {
 	/**
 	 * Send failure notification email to admin.
 	 *
-	 * @param string $url      The webhook URL.
-	 * @param mixed  $response The response from wp_remote_post.
+	 * @param string $url          The webhook URL.
+	 * @param mixed  $response     The response from wp_remote_post.
+	 * @param int    $max_failures Maximum consecutive failures before blocking.
 	 */
-	private function send_failure_notification( string $url, $response ): void {
+	private function send_failure_notification(string $url, mixed $response, int $max_failures = 10 ): void {
 		$admin_email = get_option( 'admin_email' );
 		if ( ! $admin_email ) {
 			return;
@@ -250,20 +254,21 @@ class Dispatcher {
 			);
 		}
 
-		// Set default message
 		$message = sprintf(
-			/* translators: 1: URL, 2: Error message, 3: Time */
+			/* translators: 1: URL, 2: Max failures threshold, 3: Error message, 4: Time */
 			__(
-				'A webhook delivery has failed.
+				'A webhook URL has been blocked due to consecutive failures.
 
 URL: %1$s
-Error: %2$s
-Time: %3$s
+Consecutive Failures: %2$d
+Last Error: %3$s
+Time: %4$s
 
-This webhook will be blocked after 10 consecutive failures within 1 hour.',
+This URL will be automatically unblocked after 1 hour. No webhooks will be delivered to this URL until then.',
 				'wp-webhook-framework'
 			),
 			$url,
+			$max_failures,
 			$error_message,
 			current_time( 'mysql' )
 		);
@@ -271,7 +276,7 @@ This webhook will be blocked after 10 consecutive failures within 1 hour.',
 		// Set default subject
 		$subject = sprintf(
 			/* translators: %s: Site name */
-			__( 'Webhook Delivery Failed - %s', 'wp-webhook-framework' ),
+			__( 'Webhook URL Blocked - %s', 'wp-webhook-framework' ),
 			get_bloginfo( 'name' )
 		);
 

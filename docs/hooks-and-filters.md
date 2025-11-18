@@ -21,6 +21,57 @@ add_action('wpwf_register_webhooks', 'my_plugin_register_webhooks');
 
 See @docs/custom-webhooks.md for detailed webhook creation examples.
 
+### `wpwf_webhook_success`
+
+Fired when a webhook is successfully delivered.
+
+**Parameters:**
+- `$url` (string) - The webhook URL
+
+**Example:**
+```php
+add_action('wpwf_webhook_success', function($url) {
+    error_log("Webhook delivered successfully: {$url}");
+});
+```
+
+### `wpwf_webhook_failed`
+
+Fired when a webhook fails after all retries are exhausted, before blocking decision is made.
+
+**Parameters:**
+- `$url` (string) - The webhook URL
+- `$response` (mixed) - The response from wp_remote_post
+- `$failure_count` (int) - Current consecutive failure count
+- `$max_failures` (int) - Maximum failures before blocking
+
+**Example:**
+```php
+add_action('wpwf_webhook_failed', function($url, $response, $failure_count, $max_failures) {
+    error_log("Webhook failed ({$failure_count}/{$max_failures}): {$url}");
+}, 10, 4);
+```
+
+### `wpwf_webhook_blocked`
+
+Fired when a webhook URL is blocked due to reaching the consecutive failure threshold. This is when email notifications are sent by default.
+
+**Parameters:**
+- `$url` (string) - The webhook URL
+- `$response` (mixed) - The response from wp_remote_post
+- `$max_failures` (int) - Maximum failures threshold
+
+**Example - Send Slack notification:**
+```php
+add_action('wpwf_webhook_blocked', function($url, $response, $max_failures) {
+    wp_remote_post('https://hooks.slack.com/services/YOUR/WEBHOOK/URL', array(
+        'body' => json_encode(array(
+            'text' => "Webhook blocked after {$max_failures} failures: {$url}"
+        ))
+    ));
+}, 10, 3);
+```
+
 ## Filters
 
 ### `wpwf_payload`
@@ -156,7 +207,7 @@ add_filter('wpwf_excluded_meta_keys', function($excluded_keys, $meta_key, $meta_
 
 ### `wpwf_failure_notification_email`
 
-Filter failure notification email data before sending. Allows customizing recipients, subject, message, and headers.
+Filter failure notification email data before sending. Allows customizing recipients, subject, message, and headers. Return `false` to prevent email from being sent.
 
 **Parameters:**
 - `$email_data` (array) - Email data containing:
@@ -190,11 +241,10 @@ add_filter('wpwf_failure_notification_email', function($email_data, $url, $respo
 }, 10, 3);
 ```
 
-**Example - Disable notifications:**
+**Example - Disable email notifications (use actions instead):**
 ```php
 add_filter('wpwf_failure_notification_email', function($email_data, $url, $response) {
-    // Return false to prevent email from being sent
-    return false;
+    return false; // Disable email, use wpwf_webhook_blocked action instead
 }, 10, 3);
 ```
 

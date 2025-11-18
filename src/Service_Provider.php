@@ -16,6 +16,7 @@ use Citation\WP_Webhook_Framework\Webhooks\Post_Webhook;
 use Citation\WP_Webhook_Framework\Webhooks\Term_Webhook;
 use Citation\WP_Webhook_Framework\Webhooks\User_Webhook;
 use Citation\WP_Webhook_Framework\Webhooks\Meta_Webhook;
+use Citation\WP_Webhook_Framework\Notifications\Blocked;
 
 /**
  * Class Service_Provider
@@ -83,6 +84,7 @@ class Service_Provider {
 		);
 
 		$instance->register_webhooks();
+		$instance->register_notifications();
 	}
 
 	/**
@@ -104,6 +106,14 @@ class Service_Provider {
 
 		// Initialize all registered webhooks
 		$this->registry->init_all();
+	}
+
+	/**
+	 * Register notification handlers.
+	 */
+	private function register_notifications(): void {
+		$failure_notifier = new Blocked();
+		$failure_notifier->init();
 	}
 
 	/**

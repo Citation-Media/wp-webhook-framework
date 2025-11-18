@@ -7,9 +7,6 @@
 
 namespace Citation\WP_Webhook_Framework\Entities;
 
-use Citation\WP_Webhook_Framework\Dispatcher;
-use Citation\WP_Webhook_Framework\Support\Payload;
-
 /**
  * Term entity handler.
  *

@@ -255,6 +255,41 @@ add_filter('wpwf_timeout', function($timeout, $webhook_name) {
 }, 10, 2);
 ```
 
+### `wpwf_retry_base_time`
+
+Filter the base time (in seconds) for exponential backoff calculation. Default is 60 seconds.
+
+**Parameters:**
+- `$base_time` (int) - The base time in seconds
+- `$webhook_name` (string) - The webhook name/identifier
+- `$retry_count` (int) - The current retry attempt number
+
+**Example - Faster retries for critical webhooks:**
+```php
+add_filter('wpwf_retry_base_time', function($base_time, $webhook_name, $retry_count) {
+    if ($webhook_name === 'critical_webhook') {
+        return 10; // Start with 10s base (10s, 20s, 40s...)
+    }
+    return $base_time;
+}, 10, 3);
+```
+
+### `wpwf_retry_delay`
+
+Filter the final calculated retry delay. Allows overriding the exponential backoff with custom logic or static values.
+
+**Parameters:**
+- `$delay` (int) - The calculated delay in seconds
+- `$retry_count` (int) - The current retry attempt number
+- `$webhook_name` (string) - The webhook name/identifier
+
+**Example - Static retry delay:**
+```php
+add_filter('wpwf_retry_delay', function($delay, $retry_count, $webhook_name) {
+    return 300; // Always retry after 5 minutes, regardless of attempt count
+}, 10, 3);
+```
+
 ### `wpwf_webhook_enabled`
 
 Filter whether a webhook is enabled. Allows dynamic enabling/disabling based on conditions.

@@ -148,6 +148,7 @@ class Dispatcher {
 
 		// Check if the request was successful
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
+			$this->schedule_retry_if_applicable( $url, $action, $entity, $id, $payload, $headers, $webhook );
 			$this->trigger_webhook_failure( $url, $response, $webhook );
 		} else {
 			$this->handle_webhook_success( $url );
@@ -308,6 +309,53 @@ This URL will be automatically unblocked after 1 hour. No webhooks will be deliv
 			$email_data['subject'],
 			$email_data['message'],
 			$email_data['headers']
+		);
+	}
+
+	/**
+	 * Schedule a retry if retries are configured and not exhausted.
+	 *
+	 * @param string              $url          The webhook URL.
+	 * @param string              $action       The action type.
+	 * @param string              $entity       The entity type.
+	 * @param int|string          $id           The entity ID.
+	 * @param array<string,mixed> $payload      The payload data.
+	 * @param array<string,mixed> $headers      The headers.
+	 * @param Webhook|null        $webhook      Webhook instance for configuration.
+	 */
+	private function schedule_retry_if_applicable( string $url, string $action, string $entity, $id, array $payload, array $headers, ?Webhook $webhook ): void {
+		if ( ! $webhook ) {
+			return;
+		}
+
+		// Get current retry count from headers (default to 0)
+		$retry_count = isset( $headers['wpwf-retry-count'] ) ? (int) $headers['wpwf-retry-count'] : 0;
+		$max_retries = $webhook->get_max_retries();
+
+		// Exit if max retries reached
+		if ( $retry_count >= $max_retries ) {
+			return;
+		}
+
+		$next_retry = $retry_count + 1;
+		$delay      = $webhook->calculate_retry_delay( $next_retry );
+
+		// Update headers with new retry count
+		$headers['wpwf-retry-count'] = $next_retry;
+
+		// Schedule the retry
+		as_schedule_single_action(
+			time() + $delay,
+			'wpwf_send_webhook',
+			array(
+				'url'     => $url,
+				'action'  => $action,
+				'entity'  => $entity,
+				'id'      => $id,
+				'payload' => $payload,
+				'headers' => $headers,
+			),
+			'wpwf'
 		);
 	}
 }

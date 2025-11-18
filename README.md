@@ -48,6 +48,7 @@ $registry = \Citation\WP_Webhook_Framework\Service_Provider::get_registry();
 $post_webhook = $registry->get('post');
 if ($post_webhook) {
     $post_webhook->webhook_url('https://api.example.com/posts')
+                 ->max_retries(3)
                  ->max_consecutive_failures(5)
                  ->timeout(60);
 }
@@ -61,7 +62,8 @@ class Custom_Webhook extends \Citation\WP_Webhook_Framework\Webhook {
     public function __construct() {
         parent::__construct('my_custom_webhook');
         
-        $this->max_consecutive_failures(3)
+        $this->max_retries(3)
+             ->max_consecutive_failures(3)
              ->timeout(30)
              ->webhook_url('https://api.example.com/custom')
              ->headers(['Authorization' => 'Bearer token123']);

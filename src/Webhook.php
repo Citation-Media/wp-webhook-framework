@@ -37,6 +37,14 @@ abstract class Webhook {
 	protected int $max_consecutive_failures = 10;
 
 	/**
+	 * Maximum number of retries for failed webhooks.
+	 *
+	 * @var int
+	 * @phpstan-var int<0,max>
+	 */
+	protected int $max_retries = 0;
+
+	/**
 	 * Request timeout in seconds.
 	 *
 	 * @var int
@@ -91,6 +99,19 @@ abstract class Webhook {
 	 */
 	public function max_consecutive_failures(int $failures ): static {
 		$this->max_consecutive_failures = max( 1, $failures );
+		return $this;
+	}
+
+	/**
+	 * Set maximum number of retries.
+	 *
+	 * @param int $retries Maximum retries.
+	 * @return static
+	 * @phpstan-param int<0,max> $retries
+	 * @phpstan-return static
+	 */
+	public function max_retries( int $retries ): static {
+		$this->max_retries = max( 0, $retries );
 		return $this;
 	}
 
@@ -170,6 +191,56 @@ abstract class Webhook {
 		 * @param string $webhook_name The webhook name/identifier.
 		 */
 		return (int) apply_filters( 'wpwf_max_consecutive_failures', $this->max_consecutive_failures, $this->name );
+	}
+
+	/**
+	 * Get the maximum number of retries.
+	 *
+	 * Applies 'wpwf_max_retries' filter for runtime modification.
+	 *
+	 * @return int
+	 */
+	public function get_max_retries(): int {
+		/**
+		 * Filter the maximum number of retries.
+		 *
+		 * @param int    $max_retries  The maximum number of retries.
+		 * @param string $webhook_name The webhook name/identifier.
+		 */
+		return (int) apply_filters( 'wpwf_max_retries', $this->max_retries, $this->name );
+	}
+
+	/**
+	 * Calculate retry delay using exponential backoff.
+	 *
+	 * Formula: base_time * (2 ^ (retry_count - 1))
+	 * Default base_time: 60s
+	 *
+	 * @param int $retry_count The current retry attempt (1-based).
+	 * @return int Delay in seconds.
+	 */
+	public function calculate_retry_delay( int $retry_count ): int {
+		/**
+		 * Filter the base time for exponential backoff calculation.
+		 *
+		 * @param int    $base_time    The base time in seconds (default 60).
+		 * @param string $webhook_name The webhook name/identifier.
+		 * @param int    $retry_count  The current retry attempt.
+		 */
+		$base_time = (int) apply_filters( 'wpwf_retry_base_time', 60, $this->name, $retry_count );
+
+		$delay = $base_time * (int) pow( 2, $retry_count - 1 );
+
+		/**
+		 * Filter the final calculated retry delay.
+		 *
+		 * Allows overriding the exponential backoff with a custom logic or static value.
+		 *
+		 * @param int    $delay        The calculated delay in seconds.
+		 * @param int    $retry_count  The current retry attempt.
+		 * @param string $webhook_name The webhook name/identifier.
+		 */
+		return (int) apply_filters( 'wpwf_retry_delay', $delay, $retry_count, $this->name );
 	}
 
 	/**

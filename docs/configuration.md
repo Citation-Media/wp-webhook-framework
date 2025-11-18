@@ -56,13 +56,24 @@ $webhook->webhook_url('https://api.example.com/custom');
 
 ### `max_consecutive_failures()`
 
-Set the number of retry attempts for failed webhooks.
+Set the number of consecutive failed webhook events before blocking the URL.
 
 **Range:** 0-10  
+**Default:** 10
+
+```php
+$webhook->max_consecutive_failures(5); // Block after 5 failed events
+```
+
+### `max_retries()`
+
+Set the number of retry attempts for a single failed webhook event.
+
+**Range:** 0+
 **Default:** 0
 
 ```php
-$webhook->max_consecutive_failures(5); // Retry up to 5 times
+$webhook->max_retries(3); // Retry 3 times with exponential backoff
 ```
 
 ### `timeout()`

@@ -18,6 +18,16 @@ namespace Citation\WP_Webhook_Framework;
 abstract class Webhook {
 
 	/**
+	 * Maximum allowed timeout in seconds.
+	 */
+	private const MAX_TIMEOUT = 300;
+
+	/**
+	 * Default base time for exponential backoff in seconds.
+	 */
+	private const DEFAULT_RETRY_BASE_TIME = 60;
+
+	/**
 	 * The webhook identifier/name.
 	 *
 	 * @var string
@@ -77,6 +87,13 @@ abstract class Webhook {
 	protected array $headers = array();
 
 	/**
+	 * Enabled notification identifiers for this webhook.
+	 *
+	 * @var string[]
+	 */
+	protected array $enabled_notifications = array();
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $name The webhook identifier/name.
@@ -124,7 +141,7 @@ abstract class Webhook {
 	 * @phpstan-return static
 	 */
 	public function timeout( int $timeout ): static {
-		$this->timeout = max( 1, min( 300, $timeout ) );
+		$this->timeout = max( 1, min( self::MAX_TIMEOUT, $timeout ) );
 		return $this;
 	}
 
@@ -164,6 +181,26 @@ abstract class Webhook {
 	public function headers( array $headers ): static {
 		$this->headers = array_merge( $this->headers, $headers );
 		return $this;
+	}
+
+	/**
+	 * Enable specific notification handlers for this webhook.
+	 *
+	 * @param string[] $notification_identifiers Array of notification identifiers to enable.
+	 * @return static
+	 */
+	public function notifications( array $notification_identifiers ): static {
+		$this->enabled_notifications = $notification_identifiers;
+		return $this;
+	}
+
+	/**
+	 * Get enabled notification identifiers for this webhook.
+	 *
+	 * @return string[]
+	 */
+	public function get_enabled_notifications(): array {
+		return $this->enabled_notifications;
 	}
 
 	/**
@@ -227,7 +264,7 @@ abstract class Webhook {
 		 * @param string $webhook_name The webhook name/identifier.
 		 * @param int    $retry_count  The current retry attempt.
 		 */
-		$base_time = (int) apply_filters( 'wpwf_retry_base_time', 60, $this->name, $retry_count );
+		$base_time = (int) apply_filters( 'wpwf_retry_base_time', self::DEFAULT_RETRY_BASE_TIME, $this->name, $retry_count );
 
 		$delay = $base_time * (int) pow( 2, $retry_count - 1 );
 

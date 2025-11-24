@@ -2,6 +2,8 @@
 
 Automatic failure monitoring, retry mechanism, and blocking system that tracks failed webhook events to prevent spam to unreliable endpoints.
 
+For email notifications and custom notification handlers, see @docs/notifications.md
+
 ## Critical Distinction: Retries vs. Blocking
 
 **Retry Attempt**: The framework automatically retrying a **single specific webhook event** that failed (e.g., "Post #123 update").
@@ -84,43 +86,6 @@ array(
 
 **Transient key**: `wpwf_failures_{md5($url)}`
 **Expiration**: 1 hour (HOUR_IN_SECONDS)
-
-## Email Notifications
-
-Sent to site admin (`admin_email` option) when a URL is blocked due to reaching the consecutive failure threshold.
-
-Notifications are handled by the `Failure_Notifier` class, which listens to the `wpwf_webhook_blocked` action.
-
-### Customizing Notifications
-
-Use the `wpwf_failure_notification_email` filter to customize email content:
-
-```php
-add_filter('wpwf_failure_notification_email', function($email_data, $url, $response) {
-    $email_data['subject'] = "[Alert] Webhook Failed: {$url}";
-    return $email_data;
-}, 10, 3);
-```
-
-### Disabling Notifications
-
-Return `false` from the filter to prevent email notifications:
-
-```php
-add_filter('wpwf_failure_notification_email', function($email_data, $url, $response) {
-    return false; // Disable notifications
-}, 10, 3);
-```
-
-### Custom Notification Handlers
-
-Hook into `wpwf_webhook_blocked` to implement custom notification systems:
-
-```php
-add_action('wpwf_webhook_blocked', function($url, $response, $max_failures) {
-    // Send to Slack, log to monitoring service, etc.
-}, 10, 3);
-```
 
 ## Webhook Status Actions
 

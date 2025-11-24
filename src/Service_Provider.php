@@ -5,18 +5,16 @@
  * @package Citation\WP_Webhook_Framework
  */
 
+declare(strict_types=1);
+
 namespace Citation\WP_Webhook_Framework;
 
-use Citation\WP_Webhook_Framework\Entities\Post;
-use Citation\WP_Webhook_Framework\Entities\Term;
-use Citation\WP_Webhook_Framework\Entities\User;
-use Citation\WP_Webhook_Framework\Entities\Meta;
-use Citation\WP_Webhook_Framework\Support\AcfUtil;
 use Citation\WP_Webhook_Framework\Webhooks\Post_Webhook;
 use Citation\WP_Webhook_Framework\Webhooks\Term_Webhook;
 use Citation\WP_Webhook_Framework\Webhooks\User_Webhook;
 use Citation\WP_Webhook_Framework\Webhooks\Meta_Webhook;
 use Citation\WP_Webhook_Framework\Notifications\Blocked;
+use Citation\WP_Webhook_Framework\Notifications\Notification_Registry;
 
 /**
  * Class Service_Provider
@@ -47,13 +45,21 @@ class Service_Provider {
 	private Webhook_Registry $registry;
 
 	/**
+	 * The notification registry instance.
+	 *
+	 * @var Notification_Registry
+	 */
+	private Notification_Registry $notification_registry;
+
+	/**
 	 * Private constructor to prevent direct instantiation.
 	 *
 	 * @param Dispatcher|null $dispatcher Optional dispatcher instance.
 	 */
 	private function __construct( ?Dispatcher $dispatcher = null ) {
-		$this->dispatcher = $dispatcher ?: new Dispatcher();
-		$this->registry   = Webhook_Registry::instance( $this->dispatcher );
+		$this->dispatcher            = $dispatcher ?: new Dispatcher();
+		$this->registry              = Webhook_Registry::instance( $this->dispatcher );
+		$this->notification_registry = Notification_Registry::instance();
 	}
 
 	/**
@@ -84,7 +90,7 @@ class Service_Provider {
 		);
 
 		$instance->register_webhooks();
-		$instance->register_notifications();
+		$instance->register_available_notifications();
 	}
 
 	/**
@@ -110,10 +116,20 @@ class Service_Provider {
 
 	/**
 	 * Register notification handlers.
+	 *
+	 * Registers available notification handlers to the registry.
+	 * Notifications must be explicitly enabled per-webhook to be initialized.
 	 */
-	private function register_notifications(): void {
-		$failure_notifier = new Blocked();
-		$failure_notifier->init();
+	private function register_available_notifications(): void {
+		// Register built-in notification handlers
+		$this->notification_registry->register( new Blocked() );
+
+		/**
+		 * Allow third parties to register custom notification handlers.
+		 *
+		 * @param Notification_Registry $notification_registry The notification registry instance.
+		 */
+		do_action( 'wpwf_register_notifications', $this->notification_registry );
 	}
 
 	/**
@@ -124,6 +140,16 @@ class Service_Provider {
 	public static function get_registry(): Webhook_Registry {
 		$instance = self::get_instance();
 		return $instance->registry;
+	}
+
+	/**
+	 * Get the notification registry instance.
+	 *
+	 * @return Notification_Registry
+	 */
+	public static function get_notification_registry(): Notification_Registry {
+		$instance = self::get_instance();
+		return $instance->notification_registry;
 	}
 
 	/**

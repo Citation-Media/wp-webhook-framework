@@ -9,7 +9,8 @@ Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking P
 - **Entity-aware payloads** - Includes post_type, taxonomy, or roles
 - **ACF integration** - Adds field key/name context to meta changes
 - **Registry pattern** - Extensible webhook system with custom configurations
-- **Failure monitoring** - Email notifications, automatic blocking after 10 failures
+- **Notification system** - Opt-in email alerts for failures, extensible notification handlers
+- **Failure monitoring** - Automatic blocking after consecutive failures
 - **Comprehensive filtering** - Control payloads, URLs, headers, and meta keys
 
 ## Quick Start
@@ -50,7 +51,8 @@ if ($post_webhook) {
     $post_webhook->webhook_url('https://api.example.com/posts')
                  ->max_retries(3)
                  ->max_consecutive_failures(5)
-                 ->timeout(60);
+                 ->timeout(60)
+                 ->notifications(['blocked']); // Enable email notifications
 }
 ```
 

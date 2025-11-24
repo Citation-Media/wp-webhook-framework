@@ -29,13 +29,15 @@ Entity-based webhook framework using registry pattern. Webhooks extend abstract 
 - **Location**: Add all documentation to `/docs` directory
 - **Style**: Keep docs brief but fully describe functionality—no unnecessary prose, just essential details
 - **Maintenance**: After making changes to functionality, architecture, or APIs, update relevant documentation in `/docs` to keep it current
+- **Code**: Make code examples type safe
 
 ## Reference Documentation
 Add new docs with an "@" mention to the "AGENTS.md" including a quick explanation. Keep the docs always up to date.
 - @README.md - Quick start, basic usage, architecture overview
 - @docs/custom-webhooks.md - Creating and registering custom webhooks, registry pattern
 - @docs/hooks-and-filters.md - All available hooks, filters with examples (includes newly documented `wpwf_headers` filter)
-- @docs/configuration.md - Constants, configuration methods, precedence rules
+- @docs/configuration.md - Constants, configuration methods, precedence rules, type-safe examples
+- @docs/notifications.md - Notification system, opt-in pattern, custom notification handlers, type-safe examples
 - @docs/third-party-integration.md - WooCommerce, ACF, CF7, Gravity Forms, EDD integration examples
 - @docs/webhook-statefulness.md - Webhook statefulness rules and best practices
-- @docs/failure-handling.md - Failure monitoring, blocking behavior, email notifications
+- @docs/failure-handling.md - Failure monitoring, retry mechanism, blocking behavior

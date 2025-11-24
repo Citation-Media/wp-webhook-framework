@@ -162,11 +162,18 @@ class Webhook_Registry {
 	/**
 	 * Initialize all registered webhooks.
 	 *
-	 * Called by the ServiceProvider to initialize all webhooks.
+	 * Called by the ServiceProvider to initialize all webhooks and their associated notifications.
 	 */
 	public function init_all(): void {
 		foreach ( $this->get_enabled() as $webhook ) {
 			$webhook->init();
+
+			// Initialize webhook-specific notifications
+			$enabled_notifications = $webhook->get_enabled_notifications();
+			if ( ! empty( $enabled_notifications ) ) {
+				$notification_registry = Service_Provider::get_notification_registry();
+				$notification_registry->init_selected( $enabled_notifications );
+			}
 		}
 	}
 

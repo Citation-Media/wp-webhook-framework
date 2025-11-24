@@ -27,12 +27,21 @@ Fired when a webhook is successfully delivered.
 
 **Parameters:**
 - `$url` (string) - The webhook URL
+- `$payload` (array) - The webhook payload containing action, entity, id, and entity-specific data
+- `$response` (array) - The HTTP response from wp_remote_post
+- `$webhook` (Webhook|null) - The webhook instance (if available)
 
 **Example:**
 ```php
-add_action('wpwf_webhook_success', function($url) {
-    error_log("Webhook delivered successfully: {$url}");
-});
+add_action('wpwf_webhook_success', function($url, $payload, $response, $webhook) {
+    error_log(sprintf(
+        "Webhook delivered successfully: %s (action: %s, entity: %s, id: %s)",
+        $url,
+        $payload['action'],
+        $payload['entity'],
+        $payload['id']
+    ));
+}, 10, 4);
 ```
 
 ### `wpwf_webhook_failed`

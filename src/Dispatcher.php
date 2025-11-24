@@ -151,21 +151,13 @@ class Dispatcher {
 			$this->schedule_retry_if_applicable( $url, $action, $entity, $id, $payload, $headers, $webhook );
 			$this->trigger_webhook_failure( $url, $response, $webhook );
 		} else {
-			$this->handle_webhook_success( $url );
+
+			// Reset failure count and unblock on success
+			$failure_dto = Failure::create_fresh();
+			$failure_dto->save( $url );
+
+			do_action( 'wpwf_webhook_success', $url, $body, $response, $webhook );
 		}
-	}
-
-	/**
-	 * Handle successful webhook delivery.
-	 *
-	 * @param string $url The webhook URL.
-	 */
-	private function handle_webhook_success( string $url ): void {
-		// Reset failure count and unblock on success
-		$failure_dto = Failure::create_fresh();
-		$failure_dto->save( $url );
-
-		do_action( 'wpwf_webhook_success', $url );
 	}
 
 	/**

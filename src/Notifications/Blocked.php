@@ -24,9 +24,9 @@ class Blocked {
 	 *
 	 * Triggered when a webhook URL is blocked due to consecutive failures.
 	 *
-	 * @param string $url          The webhook URL that was blocked.
-	 * @param mixed  $response     The response from wp_remote_post.
-	 * @param int    $max_failures Maximum consecutive failures before blocking.
+	 * @param string                        $url          The webhook URL that was blocked.
+	 * @param \WP_Error|array<string,mixed> $response     The response from wp_remote_post (WP_Error or array).
+	 * @param int                           $max_failures Maximum consecutive failures before blocking.
 	 */
 	public function send_failure_notification( string $url, \WP_Error|array $response, int $max_failures ): void {
 		$admin_email = get_option( 'admin_email' );

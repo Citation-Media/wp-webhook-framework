@@ -1,5 +1,7 @@
 # WP Webhook Framework
 
+[![Quality Check](https://github.com/citation-media/wp-webhook-framework/actions/workflows/quality-check.yml/badge.svg)](https://github.com/citation-media/wp-webhook-framework/actions/workflows/quality-check.yml)
+
 Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking POSTs for create/update/delete of posts, terms, and users. Meta changes trigger the entity update. ACF updates include field context. Features intelligent failure monitoring with email notifications, automatic blocking, and comprehensive filtering options.
 
 ## Features

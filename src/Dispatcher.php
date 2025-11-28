@@ -122,6 +122,9 @@ class Dispatcher {
 		// Reconstruct webhook instance from registry
 		$registry = Webhook_Registry::instance();
 		$webhook  = $registry->get( $headers['wpwf-webhook-name'] ?? '' );
+		if ( empty( $webhook ) ) {
+			throw new WP_Exception( 'Webhook not found in registry.' );
+		}
 
 		$body = array_merge(
 			$payload,
@@ -135,12 +138,12 @@ class Dispatcher {
 		if ( ! isset( $headers['Content-Type'] ) ) {
 			$headers['Content-Type'] = 'application/json';
 		}
-		$headers = apply_filters( 'wpwf_headers', $headers, $entity, $id, $webhook?->get_name() );
+		$headers = apply_filters( 'wpwf_headers', $headers, $entity, $id, $webhook );
 
 		$args = array(
 			'body'     => wp_json_encode( $body ),
 			'headers'  => $headers,
-			'timeout'  => $webhook?->get_timeout() ?? 10,
+			'timeout'  => $webhook->get_timeout(),
 			'blocking' => true,
 		);
 
@@ -180,7 +183,7 @@ class Dispatcher {
 
 		// Skip failure tracking if blocking is disabled (0)
 		if ( 0 === $max_failures ) {
-			do_action( 'wpwf_webhook_failed', $url, $response, 0, $max_failures );
+			do_action( 'wpwf_webhook_failed', $url, $response, 0, $max_failures, $webhook );
 			throw new WP_Exception( 'webhook_delivery_failed' );
 		}
 

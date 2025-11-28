@@ -165,6 +165,7 @@ class Dispatcher {
 	 *
 	 * Tracks failed webhook events (not individual retry attempts) for blocking decisions.
 	 * Each webhook event that fails (after Action Scheduler retries) increments the counter by 1.
+	 * If max_consecutive_failures is 0, blocking is disabled entirely.
 	 *
 	 * @param string  $url      The webhook URL.
 	 * @param mixed   $response The response from wp_remote_post.
@@ -174,20 +175,26 @@ class Dispatcher {
 	 */
 	private function trigger_webhook_failure( string $url, $response, Webhook $webhook ): void {
 
+		// Get max consecutive failures threshold
+		$max_failures = $webhook->get_max_consecutive_failures();
+
+		// Skip failure tracking if blocking is disabled (0)
+		if ( 0 === $max_failures ) {
+			do_action( 'wpwf_webhook_failed', $url, $response, 0, $max_failures );
+			throw new WP_Exception( 'webhook_delivery_failed' );
+		}
+
 		// Increment consecutive failure count
 		$failure_dto = Failure::from_transient( $url );
 		$failure_dto->increment_count();
 		$failure_dto->save( $url );
-
-		// Get max consecutive failures threshold
-		$max_failures = $webhook->get_max_consecutive_failures();
 
 		do_action( 'wpwf_webhook_failed', $url, $response, $failure_dto->get_count(), $max_failures );
 
 		// Block URL if consecutive failures reach threshold
 		if ( $failure_dto->get_count() >= $max_failures && ! $failure_dto->is_blocked() ) {
 			$this->block_url( $url );
-			do_action( 'wpwf_webhook_blocked', $url, $response, $max_failures );
+			do_action( 'wpwf_webhook_blocked', $url, $response, $max_failures, $webhook );
 		}
 
 		// Throw exception to mark Action Scheduler action as failed (triggers AS retry)

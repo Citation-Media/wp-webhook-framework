@@ -40,9 +40,10 @@ abstract class Webhook {
 	 *
 	 * Defines threshold of consecutive failed webhook deliveries before the URL is blocked.
 	 * Default 10 means URL blocks after 10 consecutive failures.
+	 * Set to 0 to disable blocking entirely.
 	 *
 	 * @var int
-	 * @phpstan-var positive-int
+	 * @phpstan-var int<0,max>
 	 */
 	protected int $max_consecutive_failures = 10;
 
@@ -108,14 +109,15 @@ abstract class Webhook {
 	 * Set maximum consecutive failures before URL blocking.
 	 *
 	 * Defines how many consecutive failed webhook deliveries trigger URL blocking.
+	 * Set to 0 to disable blocking entirely (URLs will never be blocked).
 	 *
-	 * @param int $failures Maximum number of consecutive failures allowed.
+	 * @param int $failures Maximum number of consecutive failures allowed, or 0 to disable blocking.
 	 * @return static
-	 * @phpstan-param positive-int $failures
+	 * @phpstan-param int<0,max> $failures
 	 * @phpstan-return static
 	 */
 	public function max_consecutive_failures( int $failures ): static {
-		$this->max_consecutive_failures = max( 1, $failures );
+		$this->max_consecutive_failures = max( 0, $failures );
 		return $this;
 	}
 

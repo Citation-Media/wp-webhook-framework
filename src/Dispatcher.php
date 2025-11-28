@@ -112,7 +112,7 @@ class Dispatcher {
 	 *
 	 * @throws WP_Exception If Action Scheduler is not active or URL is blocked.
 	 */
-	public function process_scheduled_webhook( string $url, string $action, string $entity, $id, array $payload, array $headers ): void {
+	public function process_scheduled_webhook(string $url, string $action, string $entity, $id, array $payload, array $headers ): void {
 
 		// Check if this URL is blocked due to too many failures
 		if ( $this->is_url_blocked( $url ) ) {

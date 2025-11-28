@@ -85,3 +85,5 @@ public function on_save_post(int $post_id, \WP_Post $post, bool $update): void {
 | Emission Data | Method parameters | Hook callbacks | Payloads, dynamic headers |
 
 Following this pattern ensures your webhook implementations are thread-safe, predictable, and maintainable.
+
+See [Custom Webhooks](./custom-webhooks.md) for implementation examples.

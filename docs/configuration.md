@@ -4,39 +4,29 @@ Configure webhook behavior using constants, methods, and filters.
 
 ## Configuration Constants
 
-Define these constants in `wp-config.php` to configure global webhook behavior.
+Define in `wp-config.php` for global webhook behavior.
 
 ### `WP_WEBHOOK_FRAMEWORK_URL`
 
-Sets the webhook endpoint URL for all webhooks.
-
-**Type:** `string`  
-**Default:** None (must be set)  
-**Priority:** Highest - always takes precedence over filters and webhook-specific URLs
+Sets the webhook endpoint URL for all webhooks. Always takes precedence over filters and webhook-specific URLs.
 
 ```php
-// wp-config.php
-define('WP_WEBHOOK_FRAMEWORK_URL', 'https://api.example.com/webhook');
+define( 'WP_WEBHOOK_FRAMEWORK_URL', 'https://api.example.com/webhook' );
 ```
 
 **Precedence order:**
-1. `WP_WEBHOOK_FRAMEWORK_URL` constant (highest priority)
+1. `WP_WEBHOOK_FRAMEWORK_URL` constant (highest)
 2. Webhook-specific URL via `webhook_url()` method
 3. `wpwf_url` filter
-4. No URL set (throws exception)
+4. Exception thrown if none set
 
 ### Environment-Based Configuration
 
-Use constants for environment-specific configuration:
-
 ```php
-// wp-config.php
-if (WP_ENV === 'production') {
-    define('WP_WEBHOOK_FRAMEWORK_URL', 'https://api.example.com/webhook');
-} elseif (WP_ENV === 'staging') {
-    define('WP_WEBHOOK_FRAMEWORK_URL', 'https://staging-api.example.com/webhook');
+if ( 'production' === WP_ENV ) {
+    define( 'WP_WEBHOOK_FRAMEWORK_URL', 'https://api.example.com/webhook' );
 } else {
-    define('WP_WEBHOOK_FRAMEWORK_URL', 'https://local.test/webhook');
+    define( 'WP_WEBHOOK_FRAMEWORK_URL', 'https://staging-api.example.com/webhook' );
 }
 ```
 
@@ -44,419 +34,152 @@ if (WP_ENV === 'production') {
 
 Configure individual webhooks using chainable methods.
 
-### `webhook_url()`
-
-Set a custom webhook URL for this specific webhook.
-
-```php
-$webhook->webhook_url('https://api.example.com/custom');
-```
-
-**Note:** Overridden by `WP_WEBHOOK_FRAMEWORK_URL` constant if defined.
-
-### `max_consecutive_failures()`
-
-Set the number of consecutive failed webhook events before blocking the URL.
-
-**Range:** 0-∞  
-**Default:** 10
-
-```php
-$webhook->max_consecutive_failures(5); // Block after 5 failed events
-$webhook->max_consecutive_failures(0); // Disable blocking entirely
-```
-
-**Note:** Setting to 0 disables URL blocking completely—webhooks will continue to be sent regardless of failures.
-
-### `max_retries()`
-
-Set the number of retry attempts for a single failed webhook event.
-
-**Range:** 0+
-**Default:** 0
-
-```php
-$webhook->max_retries(3); // Retry 3 times with exponential backoff
-```
-
-### `timeout()`
-
-Set the HTTP request timeout in seconds.
-
-**Range:** 1-300  
-**Default:** 10
-
-```php
-$webhook->timeout(60); // 60 second timeout
-```
-
-### `enabled()`
-
-Enable or disable the webhook.
-
-**Default:** `true`
-
-```php
-$webhook->enabled(false); // Disable webhook
-```
-
-### `headers()`
-
-Set custom HTTP headers for the webhook.
-
-```php
-$webhook->headers([
-    'Authorization' => 'Bearer token123',
-    'X-Custom-Header' => 'value'
-]);
-```
+| Method | Description | Default |
+|--------|-------------|---------|
+| `webhook_url(string)` | Custom endpoint URL | None |
+| `max_consecutive_failures(int)` | Failures before blocking (0 disables) | 10 |
+| `max_retries(int)` | Retry attempts per failed event | 0 |
+| `timeout(int)` | HTTP timeout in seconds (1-300) | 10 |
+| `enabled(bool)` | Enable/disable webhook | true |
+| `headers(array)` | Custom HTTP headers | [] |
+| `notifications(array)` | Enable notification handlers | [] |
 
 ### Chainable Configuration
 
-All configuration methods are chainable:
+```php
+$webhook->webhook_url( 'https://api.example.com' )
+        ->max_consecutive_failures( 5 )
+        ->max_retries( 3 )
+        ->timeout( 60 )
+        ->headers( array( 'Authorization' => 'Bearer token' ) )
+        ->notifications( array( 'blocked' ) );
+```
+
+## Registry Configuration
+
+Access and configure webhooks through the registry:
 
 ```php
-$webhook->webhook_url('https://api.example.com')
-        ->max_consecutive_failures(5)
-        ->timeout(60)
-        ->enabled(true)
-        ->headers(['Authorization' => 'Bearer token'])
-        ->notifications(['blocked']); // Enable blocked notification
+$registry = Service_Provider::get_registry();
+
+$post_webhook = $registry->get( 'post' );
+if ( null !== $post_webhook ) {
+    $post_webhook->webhook_url( 'https://api.example.com/posts' )
+                 ->max_consecutive_failures( 3 )
+                 ->timeout( 30 );
+}
 ```
 
 ## Notification Configuration
 
-Notifications are **opt-in** per webhook. Enable specific notification handlers for each webhook.
-
-### Enabling Notifications
+Notifications are **opt-in** per webhook. Enable specific handlers:
 
 ```php
-use Citation\WP_Webhook_Framework\Webhook_Registry;
-
-/**
- * Enable notifications for specific webhooks.
- *
- * @param Webhook_Registry $registry The webhook registry.
- */
-add_action('wpwf_register_webhooks', function(Webhook_Registry $registry): void {
-    $post_webhook = $registry->get('post');
-    if (null !== $post_webhook) {
-        // Enable blocked email notification
-        $post_webhook->notifications(['blocked']);
+add_action( 'wpwf_register_webhooks', function ( Webhook_Registry $registry ): void {
+    $post_webhook = $registry->get( 'post' );
+    if ( null !== $post_webhook ) {
+        $post_webhook->notifications( array( 'blocked' ) );
     }
-});
+} );
 ```
 
-### Available Notification Handlers
-
-**Built-in:**
+**Built-in handlers:**
 - `'blocked'` - Email notification when webhook URL is blocked
 
-**Custom handlers** can be registered via `wpwf_register_notifications` action. See @docs/notifications.md for complete notification system documentation.
-
-## Registry Configuration
-
-Access and configure webhooks through the registry.
-
-```php
-use Citation\WP_Webhook_Framework\Service_Provider;
-use Citation\WP_Webhook_Framework\Webhook;
-
-// Get registry instance
-$registry = Service_Provider::get_registry();
-
-// Configure built-in webhooks
-$post_webhook = $registry->get('post');
-if (null !== $post_webhook) {
-    $post_webhook->webhook_url('https://api.example.com/posts')
-                 ->max_consecutive_failures(3)
-                 ->timeout(30);
-}
-
-$user_webhook = $registry->get('user');
-if (null !== $user_webhook) {
-    $user_webhook->webhook_url('https://api.example.com/users')
-                 ->max_consecutive_failures(5)
-                 ->timeout(45);
-}
-```
+See [Notifications](./notifications.md) for custom handlers.
 
 ## Filter-Based Configuration
 
-Use WordPress filters for dynamic configuration.
+Use WordPress filters for dynamic configuration. See [Hooks and Filters](./hooks-and-filters.md) for complete reference.
 
-### Dynamic URL Routing
-
-```php
-/**
- * Route webhook URLs by entity type.
- *
- * @param string     $url    The webhook URL.
- * @param string     $entity The entity type (post, term, user, meta).
- * @param int|string $id     The entity ID.
- * @return string Modified webhook URL.
- */
-add_filter('wpwf_url', function(string $url, string $entity, int|string $id): string {
-    // Route by entity type
-    if ('post' === $entity) {
-        return 'https://api.example.com/posts';
-    }
-    
-    if ('user' === $entity) {
-        return 'https://api.example.com/users';
-    }
-    
-    return $url;
-}, 10, 3);
-```
-
-### Dynamic Headers
-
-```php
-/**
- * Add dynamic headers to webhook requests.
- *
- * @param array<string,string> $headers      Existing headers.
- * @param string               $entity       The entity type.
- * @param int|string           $id           The entity ID.
- * @param string               $webhook_name The webhook name.
- * @return array<string,string> Modified headers.
- */
-add_filter('wpwf_headers', function(array $headers, string $entity, int|string $id, string $webhook_name): array {
-    // Add authentication
-    $api_token = get_option('api_token');
-    if (is_string($api_token) && !empty($api_token)) {
-        $headers['Authorization'] = 'Bearer ' . $api_token;
-    }
-    
-    // Add entity-specific headers
-    if ('post' === $entity) {
-        $post_type = get_post_type($id);
-        if (is_string($post_type)) {
-            $headers['X-Post-Type'] = $post_type;
-        }
-    }
-    
-    return $headers;
-}, 10, 4);
-```
-
-See @docs/hooks-and-filters.md for all available filters.
+**Key filters:**
+- `wpwf_url` - Dynamic URL routing
+- `wpwf_headers` - Dynamic headers
+- `wpwf_payload` - Payload modification
+- `wpwf_excluded_meta_keys` - Meta key filtering
 
 ## Options-Based Configuration
 
-Store configuration in WordPress options for admin control.
+Store configuration in WordPress options for admin control:
 
 ```php
-use Citation\WP_Webhook_Framework\Webhook_Registry;
-
-// Save configuration
-update_option('webhook_api_url', 'https://api.example.com');
-update_option('webhook_api_token', 'token123');
-update_option('webhook_enabled', true);
-
-/**
- * Configure webhooks from options.
- *
- * @param Webhook_Registry $registry The webhook registry.
- */
-add_action('wpwf_register_webhooks', function(Webhook_Registry $registry): void {
-    $enabled = get_option('webhook_enabled');
-    if (!$enabled) {
+add_action( 'wpwf_register_webhooks', function ( Webhook_Registry $registry ): void {
+    $enabled = get_option( 'webhook_enabled' );
+    if ( ! $enabled ) {
         return;
     }
     
-    $api_url = get_option('webhook_api_url');
-    $api_token = get_option('webhook_api_token');
+    $api_url   = get_option( 'webhook_api_url' );
+    $api_token = get_option( 'webhook_api_token' );
     
-    if (!is_string($api_url) || !is_string($api_token)) {
+    if ( ! is_string( $api_url ) || ! is_string( $api_token ) ) {
         return;
     }
     
     $webhook = new Custom_Webhook();
-    $webhook->webhook_url($api_url)
-            ->headers(['Authorization' => 'Bearer ' . $api_token]);
+    $webhook->webhook_url( $api_url )
+            ->headers( array( 'Authorization' => 'Bearer ' . $api_token ) );
     
-    $registry->register($webhook);
-});
+    $registry->register( $webhook );
+} );
 ```
 
 ## Configuration Priority
 
-Understanding configuration precedence:
-
 ### URL Priority
-1. `WP_WEBHOOK_FRAMEWORK_URL` constant (always wins)
+1. `WP_WEBHOOK_FRAMEWORK_URL` constant
 2. Webhook-specific `webhook_url()` method
 3. `wpwf_url` filter
-4. Exception thrown if none set
 
 ### Headers Priority
 1. Webhook-specific `headers()` method
-2. `wpwf_headers` filter (merged with webhook headers)
+2. `wpwf_headers` filter (merged)
 
 ### Payload Priority
 1. Original payload from entity handler
-2. `wpwf_payload` filter (can modify or prevent)
+2. `wpwf_payload` filter
 
-## Failure Monitoring Configuration
+## Failure Monitoring Defaults
 
-### Default Settings
-- **Failure Threshold:** 10 consecutive failures
-- **Time Window:** 1 hour
-- **Block Duration:** 1 hour (automatic unblock)
-- **Email Notification:** Sent on first failure after retries exhausted
+| Setting | Default |
+|---------|---------|
+| Failure Threshold | 10 consecutive failures |
+| Block Duration | 1 hour (auto-unblock) |
+| Email Notification | On first block (if enabled) |
 
-### Customize Email Notifications
-
-```php
-add_filter('wpwf_failure_notification_email', function($email_data, $url, $response) {
-    // Change recipient
-    $email_data['recipient'] = 'webhooks@example.com';
-    
-    // Customize subject
-    $email_data['subject'] = 'URGENT: Webhook Failed';
-    
-    // Customize message
-    $email_data['message'] = sprintf(
-        "Webhook failed: %s\nError: %s",
-        $url,
-        $email_data['error_message']
-    );
-    
-    return $email_data;
-}, 10, 3);
-```
-
-### Disable Email Notifications
-
-Since notifications are opt-in, simply don't enable them:
-
-```php
-// Don't call ->notifications(['blocked']) on webhook
-```
-
-See @docs/failure-handling.md for detailed failure monitoring information.
-
-## Meta Configuration
-
-### Exclude Meta Keys
-
-Prevent specific meta keys from triggering webhooks:
-
-```php
-add_filter('wpwf_excluded_meta_keys', function($excluded_keys, $meta_key, $meta_type, $object_id) {
-    // Exclude custom internal fields
-    $excluded_keys[] = '_my_internal_field';
-    $excluded_keys[] = '_temp_data';
-    
-    // Conditionally exclude based on post type
-    if ($meta_type === 'post') {
-        $post = get_post($object_id);
-        if ($post && $post->post_type === 'product') {
-            $excluded_keys[] = '_product_internal_cache';
-        }
-    }
-    
-    return $excluded_keys;
-}, 10, 4);
-```
-
-**Default excluded keys:**
-- `_edit_lock`
-- `_edit_last`
-- `_acf_changed`
-- `_acf_cache_*` (pattern)
-
-## Configuration Examples
-
-### Development Environment
-
-```php
-// wp-config.php
-if (WP_ENV === 'development') {
-    define('WP_WEBHOOK_FRAMEWORK_URL', 'http://localhost:3000/webhook');
-    
-    // Disable webhooks in development
-    add_filter('wpwf_payload', '__return_empty_array');
-}
-```
-
-### Multi-Site Configuration
-
-```php
-add_filter('wpwf_url', function($url, $entity, $id) {
-    // Route by site
-    $site_id = get_current_blog_id();
-    return sprintf('https://api.example.com/sites/%d/webhook', $site_id);
-}, 10, 3);
-```
-
-### Conditional Webhook Activation
-
-```php
-add_action('wpwf_register_webhooks', function($registry) {
-    // Only register post webhook for specific post types
-    if (get_option('enable_post_webhooks')) {
-        $post_webhook = $registry->get('post');
-        if ($post_webhook) {
-            $post_webhook->enabled(true);
-        }
-    }
-});
-
-// Filter payloads to only send specific post types
-add_filter('wpwf_payload', function($payload, $entity, $id) {
-    if ($entity === 'post') {
-        $allowed_types = get_option('webhook_post_types', ['post', 'page']);
-        $post = get_post($id);
-        
-        if (!in_array($post->post_type, $allowed_types)) {
-            return []; // Prevent webhook
-        }
-    }
-    return $payload;
-}, 10, 3);
-```
+See [Failure Handling](./failure-handling.md) for configuration.
 
 ## Security Considerations
 
 ### API Key Management
 
-Never hardcode API keys. Use constants or options:
+Never hardcode API keys:
 
 ```php
 // wp-config.php
-define('WEBHOOK_API_KEY', 'your-secret-key');
+define( 'WEBHOOK_API_KEY', 'your-secret-key' );
 
 // In code
-$webhook->headers(['Authorization' => 'Bearer ' . WEBHOOK_API_KEY]);
+$webhook->headers( array( 'Authorization' => 'Bearer ' . WEBHOOK_API_KEY ) );
 ```
 
 ### URL Validation
 
-Validate webhook URLs before setting:
-
 ```php
-add_filter('wpwf_url', function($url, $entity, $id) {
-    // Only allow HTTPS in production
-    if (WP_ENV === 'production' && !str_starts_with($url, 'https://')) {
-        return ''; // Block non-HTTPS URLs
+add_filter( 'wpwf_url', function ( string $url, string $entity, int|string $id ): string {
+    // Require HTTPS in production
+    if ( 'production' === WP_ENV && ! str_starts_with( $url, 'https://' ) ) {
+        return '';
     }
     return $url;
-}, 10, 3);
+}, 10, 3 );
 ```
 
 ### Payload Sanitization
 
-Sanitize sensitive data from payloads:
-
 ```php
-add_filter('wpwf_payload', function($payload, $entity, $id) {
-    // Remove sensitive fields
-    unset($payload['password']);
-    unset($payload['secret_key']);
-    
+add_filter( 'wpwf_payload', function ( array $payload, string $entity, int|string $id ): array {
+    unset( $payload['password'], $payload['secret_key'] );
     return $payload;
-}, 10, 3);
+}, 10, 3 );
 ```

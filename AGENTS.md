@@ -30,14 +30,15 @@ Entity-based webhook framework using registry pattern. Webhooks extend abstract 
 - **Style**: Keep docs brief but fully describe functionality—no unnecessary prose, just essential details
 - **Maintenance**: After making changes to functionality, architecture, or APIs, update relevant documentation in `/docs` to keep it current
 - **Code**: Make code examples type safe
+- **Relative Links**: Use relative links for internal references within the docs folder
+- **Avoid redundancy**: If a concept is explained in one doc, reference it in others instead of repeating
 
 ## Reference Documentation
 Add new docs with an "@" mention to the "AGENTS.md" including a quick explanation. Keep the docs always up to date.
 - @README.md - Quick start, basic usage, architecture overview
-- @docs/custom-webhooks.md - Creating and registering custom webhooks, registry pattern
-- @docs/hooks-and-filters.md - All available hooks, filters with examples (includes newly documented `wpwf_headers` filter)
-- @docs/configuration.md - Constants, configuration methods, precedence rules, type-safe examples
-- @docs/notifications.md - Notification system, opt-in pattern, custom notification handlers, type-safe examples
-- @docs/third-party-integration.md - WooCommerce, ACF, CF7, Gravity Forms, EDD integration examples
+- @docs/custom-webhooks.md - Creating webhooks, registry pattern, plugin integrations (WooCommerce, CF7, Gravity Forms)
+- @docs/hooks-and-filters.md - All available hooks and filters with examples
+- @docs/configuration.md - Constants, configuration methods, precedence rules
+- @docs/notifications.md - Notification system, opt-in pattern, custom handlers
 - @docs/webhook-statefulness.md - Webhook statefulness rules and best practices
 - @docs/failure-handling.md - Failure monitoring, retry mechanism, blocking behavior

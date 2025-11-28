@@ -37,7 +37,7 @@ Ensure Action Scheduler is active (dependency is declared).
 define('WP_WEBHOOK_FRAMEWORK_URL', 'https://api.example.com/webhook');
 ```
 
-See @docs/configuration.md for detailed configuration options.
+See [Configuration](./docs/configuration.md) for detailed configuration options.
 
 ## Usage Examples
 
@@ -91,7 +91,7 @@ add_action('wpwf_register_webhooks', function($registry) {
 });
 ```
 
-See @docs/custom-webhooks.md for detailed webhook creation guide.
+See [Custom Webhooks](./docs/custom-webhooks.md) for detailed webhook creation guide.
 
 ### Filter Payloads
 
@@ -114,7 +114,7 @@ add_filter('wpwf_payload', function($payload, $entity, $id) {
 }, 10, 3);
 ```
 
-See @docs/hooks-and-filters.md for all available hooks and filters.
+See [Hooks and Filters](./docs/hooks-and-filters.md) for all available hooks and filters.
 
 ## Architecture Concepts
 
@@ -135,7 +135,7 @@ $this->webhook_url('https://api.example.com')
 $this->emit('update', 'post', $post_id, $payload);
 ```
 
-See @docs/webhook-statefulness.md for detailed explanation.
+See [Webhook Statefulness](./docs/webhook-statefulness.md) for detailed explanation.
 
 ### Core Components
 
@@ -176,7 +176,7 @@ Example webhook payload:
 - **Auto-unblock** after 1 hour
 - **Success resets** failure count and blocked status
 
-See @docs/failure-handling.md for configuration and customization.
+See [Failure Handling](./docs/failure-handling.md) for configuration and customization.
 
 ## Code Quality
 

@@ -31,7 +31,6 @@ abstract class Webhook {
 	 * The webhook identifier/name.
 	 *
 	 * @var string
-	 * @phpstan-var non-empty-string
 	 */
 	protected string $name;
 
@@ -98,7 +97,6 @@ abstract class Webhook {
 	 * Constructor.
 	 *
 	 * @param string $name The webhook identifier/name.
-	 * @phpstan-param non-empty-string $name
 	 */
 	public function __construct( string $name ) {
 		$this->name                         = $name;
@@ -114,7 +112,6 @@ abstract class Webhook {
 	 * @param int $failures Maximum number of consecutive failures allowed, or 0 to disable blocking.
 	 * @return static
 	 * @phpstan-param int<0,max> $failures
-	 * @phpstan-return static
 	 */
 	public function max_consecutive_failures( int $failures ): static {
 		$this->max_consecutive_failures = max( 0, $failures );
@@ -127,7 +124,6 @@ abstract class Webhook {
 	 * @param int $retries Maximum retries.
 	 * @return static
 	 * @phpstan-param int<0,max> $retries
-	 * @phpstan-return static
 	 */
 	public function max_retries( int $retries ): static {
 		$this->max_retries = max( 0, $retries );
@@ -140,7 +136,6 @@ abstract class Webhook {
 	 * @param int $timeout Timeout in seconds (1-300).
 	 * @return static
 	 * @phpstan-param positive-int $timeout
-	 * @phpstan-return static
 	 */
 	public function timeout( int $timeout ): static {
 		$this->timeout = max( 1, min( self::MAX_TIMEOUT, $timeout ) );
@@ -152,7 +147,6 @@ abstract class Webhook {
 	 *
 	 * @param bool $enabled Whether the webhook is enabled.
 	 * @return static
-	 * @phpstan-return static
 	 */
 	public function enabled( bool $enabled = true ): static {
 		$this->enabled = $enabled;
@@ -162,12 +156,10 @@ abstract class Webhook {
 	/**
 	 * Set a custom webhook URL for this specific webhook.
 	 *
-	 * @param string|null $url The webhook URL or null to use default.
+	 * @param string $url The webhook URL or null to use default.
 	 * @return static
-	 * @phpstan-param non-empty-string|null $url
-	 * @phpstan-return static
 	 */
-	public function webhook_url( ?string $url ): static {
+	public function webhook_url( string $url ): static {
 		$this->webhook_url = $url;
 		return $this;
 	}
@@ -177,8 +169,6 @@ abstract class Webhook {
 	 *
 	 * @param array<string,string> $headers Additional headers.
 	 * @return static
-	 * @phpstan-param array<non-empty-string,non-empty-string> $headers
-	 * @phpstan-return static
 	 */
 	public function headers( array $headers ): static {
 		$this->headers = array_merge( $this->headers, $headers );

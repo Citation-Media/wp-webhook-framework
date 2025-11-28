@@ -7,6 +7,8 @@
 
 namespace Citation\WP_Webhook_Framework\Entities;
 
+use WP_Term;
+
 /**
  * Term entity handler.
  *
@@ -22,6 +24,12 @@ class Term extends Entity_Handler {
 	 */
 	public function prepare_payload( int $term_id ): array {
 		$term = get_term( $term_id );
+
+		// Return empty payload if term is not found.
+		if ( ! is_a( $term, WP_Term::class ) ) {
+			return array();
+		}
+
 		return array( 'taxonomy' => $term->taxonomy );
 	}
 }

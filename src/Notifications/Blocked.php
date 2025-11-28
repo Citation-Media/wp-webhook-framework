@@ -73,7 +73,7 @@ class Blocked extends Notification {
 	 * @param string                        $url          The webhook URL.
 	 * @param \WP_Error|array<string,mixed> $response     The response from wp_remote_post.
 	 * @param int                           $max_failures Maximum failures threshold.
-	 * @param Webhook                  $webhook      The webhook instance.
+	 * @param Webhook                       $webhook      The webhook instance.
 	 */
 	public function on_webhook_blocked( string $url, \WP_Error|array $response, int $max_failures, Webhook $webhook ): void {
 		$this->url          = $url;

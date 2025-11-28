@@ -108,7 +108,7 @@ class Dispatcher {
 	 * @param string              $entity       The entity type.
 	 * @param int|string          $id           The entity ID.
 	 * @param array<string,mixed> $payload      The payload data.
-	 * @param array<string,mixed> $headers      The HTML headers.
+	 * @param array<string,mixed> $headers      The HTTP headers.
 	 *
 	 * @throws WP_Exception If Action Scheduler is not active or URL is blocked.
 	 */

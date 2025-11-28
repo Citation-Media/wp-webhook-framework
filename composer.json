@@ -12,6 +12,15 @@
       "Citation\\WP_Webhook_Framework\\": "src/"
     }
   },
+  "archive": {
+    "exclude": [
+      "/docs",
+      "/.github",
+      "/phpcs.xml",
+      "/phpstan.neon",
+      "/AGENTS.md"
+    ]
+  },
   "scripts": {
     "phpstan": "@php ./vendor/bin/phpstan analyse",
     "phpstan:ci": "@php ./vendor/bin/phpstan analyse --error-format=checkstyle | cs2pr",

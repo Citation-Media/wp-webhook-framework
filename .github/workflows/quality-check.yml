@@ -66,7 +66,13 @@ jobs:
           key: ${{ runner.os }}-vendor-${{ hashFiles('**/composer.lock') }}
 
       - name: Run PHPStan
-        run: ./vendor/bin/phpstan analyse --error-format=checkstyle | cs2pr
+        id: phpstan
+        continue-on-error: true
+        run: ./vendor/bin/phpstan analyse --error-format=checkstyle > ./phpstan-report.xml
+
+      - name: Show PHPStan results in PR
+        if: ${{ always() && steps.phpstan.outcome == 'failure' }}
+        run: cs2pr ./phpstan-report.xml
 
   phpcs:
     name: PHPCS
@@ -91,4 +97,10 @@ jobs:
           key: ${{ runner.os }}-vendor-${{ hashFiles('**/composer.lock') }}
 
       - name: Run PHPCS
-        run: ./vendor/bin/phpcs --report=checkstyle | cs2pr
+        id: phpcs
+        continue-on-error: true
+        run: ./vendor/bin/phpcs --report-checkstyle=./phpcs-report.xml
+
+      - name: Show PHPCS results in PR
+        if: ${{ always() && steps.phpcs.outcome == 'failure' }}
+        run: cs2pr ./phpcs-report.xml --graceful-warnings

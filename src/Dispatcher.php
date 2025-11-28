@@ -192,7 +192,7 @@ class Dispatcher {
 		$failure_dto->increment_count();
 		$failure_dto->save( $url );
 
-		do_action( 'wpwf_webhook_failed', $url, $response, $failure_dto->get_count(), $max_failures );
+		do_action( 'wpwf_webhook_failed', $url, $response, $failure_dto->get_count(), $max_failures, $webhook );
 
 		// Block URL if consecutive failures reach threshold
 		if ( $failure_dto->get_count() >= $max_failures && ! $failure_dto->is_blocked() ) {

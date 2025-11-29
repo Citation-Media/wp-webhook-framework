@@ -63,11 +63,13 @@ class Dispatcher {
 			throw new WP_Exception( 'webhook_payload_empty' );
 		}
 
+		$group = sanitize_title('wpwf-'. $entity);
+
 		$query = as_get_scheduled_actions(
 			array(
 				'per_page'              => 1,
 				'hook'                  => 'wpwf_send_webhook',
-				'group'                 => 'wpwf',
+				'group'                 => $group,
 				'status'                => ActionScheduler_Store::STATUS_PENDING,
 				'args'                  => array(
 					'url'    => $url,
@@ -94,7 +96,7 @@ class Dispatcher {
 				'payload' => $payload,
 				'headers' => $headers,
 			),
-			'wpwf'
+			$group
 		);
 	}
 

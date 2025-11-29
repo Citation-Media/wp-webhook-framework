@@ -68,29 +68,31 @@ class Meta extends Entity_Handler {
 	 * @return bool True if the meta key should be excluded.
 	 */
 	public function is_meta_key_excluded( string $meta_key, string $meta_type, int $object_id ): bool {
+
+		$excluded_keys = array(
+			'_edit_lock',
+			'_edit_last',
+			'session_tokens',
+		);
+
+		$excluded = in_array( $meta_key, $excluded_keys, true ) || str_starts_with($meta_key, '_');
+
 		/**
 		 * Filter the list of meta keys that should be excluded from webhook emission.
 		 *
 		 * @since 1.0.0
 		 *
-		 * @param array<string> $excluded_keys Array of meta keys to exclude from webhooks.
+		 * @param bool          $excluded      Boolean value if meta field should be excluded or not.
 		 * @param string        $meta_key      The current meta key being processed.
 		 * @param string        $meta_type     The meta type (post, term, user).
 		 * @param int           $object_id     The object ID.
 		 */
-		$excluded_keys = apply_filters(
-			'wpwf_excluded_meta_keys',
-			array(
-				'_edit_lock',
-				'_edit_last',
-				'session_tokens',
-			),
+		return apply_filters('wpwf_excluded_meta',
+			$excluded,
 			$meta_key,
 			$meta_type,
 			$object_id
 		);
-
-		return in_array( $meta_key, $excluded_keys, true );
 	}
 
 	/**

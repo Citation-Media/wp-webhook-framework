@@ -96,7 +96,7 @@ Use WordPress filters for dynamic configuration. See [Hooks and Filters](./hooks
 - `wpwf_url` - Dynamic URL routing
 - `wpwf_headers` - Dynamic headers
 - `wpwf_payload` - Payload modification
-- `wpwf_excluded_meta_keys` - Meta key filtering
+- `wpwf_excluded_meta` - Meta key filtering
 
 ## Options-Based Configuration
 

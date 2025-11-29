@@ -155,7 +155,7 @@ add_filter( 'wpwf_headers', function ( array $headers, string $entity, int|strin
 }, 10, 4 );
 ```
 
-### `wpwf_excluded_meta_keys`
+### `wpwf_excluded_meta`
 
 Exclude specific meta keys from triggering webhooks.
 
@@ -170,7 +170,7 @@ Exclude specific meta keys from triggering webhooks.
 **Default excluded:** `_edit_lock`, `_edit_last`, `_acf_changed`, `_acf_cache_*`
 
 ```php
-add_filter( 'wpwf_excluded_meta_keys', function ( array $excluded_keys, string $meta_key, string $meta_type, int $object_id ): array {
+add_filter( 'wpwf_excluded_meta', function ( array $excluded_keys, string $meta_key, string $meta_type, int $object_id ): array {
     $excluded_keys[] = '_my_internal_field';
     return $excluded_keys;
 }, 10, 4 );
@@ -304,4 +304,4 @@ Filters are applied in this order:
 2. `wpwf_url` - Customize webhook URL
 3. `WP_WEBHOOK_FRAMEWORK_URL` constant - Overrides filtered URL
 4. `wpwf_headers` - Customize HTTP headers
-5. `wpwf_excluded_meta_keys` - Filter meta keys (meta webhooks only)
+5. `wpwf_excluded_meta` - Filter meta keys (meta webhooks only)

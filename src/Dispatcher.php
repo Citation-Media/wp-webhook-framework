@@ -63,7 +63,7 @@ class Dispatcher {
 			throw new WP_Exception( 'webhook_payload_empty' );
 		}
 
-		$group = sanitize_title('wpwf-'. $entity);
+		$group = sanitize_title( 'wpwf-' . $entity );
 
 		$query = as_get_scheduled_actions(
 			array(

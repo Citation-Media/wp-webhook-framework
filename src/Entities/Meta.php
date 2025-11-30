@@ -75,7 +75,7 @@ class Meta extends Entity_Handler {
 			'session_tokens',
 		);
 
-		$excluded = in_array( $meta_key, $excluded_keys, true ) || str_starts_with($meta_key, '_');
+		$excluded = in_array( $meta_key, $excluded_keys, true ) || str_starts_with( $meta_key, '_' );
 
 		/**
 		 * Filter the list of meta keys that should be excluded from webhook emission.
@@ -87,7 +87,8 @@ class Meta extends Entity_Handler {
 		 * @param string        $meta_type     The meta type (post, term, user).
 		 * @param int           $object_id     The object ID.
 		 */
-		return apply_filters('wpwf_excluded_meta',
+		return apply_filters(
+			'wpwf_excluded_meta',
 			$excluded,
 			$meta_key,
 			$meta_type,

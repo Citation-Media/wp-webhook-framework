@@ -88,6 +88,10 @@ class Meta_Webhook extends Webhook {
 	 * @return bool|null
 	 */
 	public function on_updated_post_meta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
+		if ( wp_is_post_revision( $object_id ) || wp_is_post_autosave( $object_id ) ) {
+			return $check;
+		}
+
 		if ( empty( $prev_value ) ) {
 			$prev_value = get_post_meta( $object_id, $meta_key, true );
 		}
@@ -105,6 +109,11 @@ class Meta_Webhook extends Webhook {
 	 * @param mixed  $meta_value The meta value.
 	 */
 	public function on_deleted_post_meta( $meta_ids, int $object_id, string $meta_key, $meta_value ): void {
+
+		if ( wp_is_post_revision( $object_id ) || wp_is_post_autosave( $object_id ) ) {
+			return;
+		}
+
 		$this->on_meta_update( 'post', $object_id, $meta_key, $meta_value );
 	}
 

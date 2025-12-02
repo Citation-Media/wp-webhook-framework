@@ -11,9 +11,6 @@ namespace Citation\WP_Webhook_Framework\Webhooks;
 
 use Citation\WP_Webhook_Framework\Webhook;
 use Citation\WP_Webhook_Framework\Entities\Meta;
-use Citation\WP_Webhook_Framework\Entities\Post;
-use Citation\WP_Webhook_Framework\Entities\Term;
-use Citation\WP_Webhook_Framework\Entities\User;
 use Citation\WP_Webhook_Framework\Webhook_Registry;
 use Citation\WP_Webhook_Framework\Support\AcfUtil;
 
@@ -22,6 +19,10 @@ use Citation\WP_Webhook_Framework\Support\AcfUtil;
  *
  * Handles meta-related webhook events with configurable retry policies,
  * timeouts, and other webhook-specific settings.
+ *
+ * Uses a processed fields cache to prevent duplicate webhook emissions when
+ * field providers (ACF, CMB2, etc.) trigger both their own hooks and WordPress
+ * core meta hooks when saving field values.
  */
 class Meta_Webhook extends Webhook {
 
@@ -31,6 +32,29 @@ class Meta_Webhook extends Webhook {
 	 * @var Meta
 	 */
 	private Meta $meta_handler;
+
+	/**
+	 * Tracks meta keys already processed during this request.
+	 *
+	 * Prevents duplicate emissions when field providers trigger multiple hooks
+	 * for the same field update (e.g., ACF fires both acf/update_value and
+	 * native update_*_metadata hooks).
+	 *
+	 * @var array<string,true>
+	 * @phpstan-var array<non-empty-string,true>
+	 */
+	private array $processed_fields = array();
+
+	/**
+	 * Tracks the current entity being processed.
+	 *
+	 * Used to purge the processed fields cache when switching to a different
+	 * entity, keeping memory usage constant during bulk operations.
+	 * Format: "{entity_type}:{object_id}"
+	 *
+	 * @var string
+	 */
+	private string $current_entity = '';
 
 	/**
 	 * Constructor.
@@ -80,6 +104,8 @@ class Meta_Webhook extends Webhook {
 	/**
 	 * Handle post meta update event.
 	 *
+	 * Skips processing if the field was already processed in this request.
+	 *
 	 * @param bool|null $check      Whether to allow updating metadata for the given type.
 	 * @param int       $object_id  The object ID.
 	 * @param string    $meta_key   The meta key.
@@ -89,6 +115,11 @@ class Meta_Webhook extends Webhook {
 	 */
 	public function on_updated_post_meta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
 		if ( wp_is_post_revision( $object_id ) || wp_is_post_autosave( $object_id ) ) {
+			return $check;
+		}
+
+		// Skip if already processed to prevent duplicate emissions
+		if ( $this->is_field_processed( 'post', $object_id, $meta_key ) ) {
 			return $check;
 		}
 
@@ -120,6 +151,8 @@ class Meta_Webhook extends Webhook {
 	/**
 	 * Handle term meta update event.
 	 *
+	 * Skips processing if the field was already processed in this request.
+	 *
 	 * @param bool|null $check      Whether to allow updating metadata for the given type.
 	 * @param int       $object_id  The object ID.
 	 * @param string    $meta_key   The meta key.
@@ -128,6 +161,11 @@ class Meta_Webhook extends Webhook {
 	 * @return bool|null
 	 */
 	public function on_updated_term_meta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
+		// Skip if already processed to prevent duplicate emissions
+		if ( $this->is_field_processed( 'term', $object_id, $meta_key ) ) {
+			return $check;
+		}
+
 		if ( empty( $prev_value ) ) {
 			$prev_value = get_term_meta( $object_id, $meta_key, true );
 		}
@@ -151,6 +189,8 @@ class Meta_Webhook extends Webhook {
 	/**
 	 * Handle user meta update event.
 	 *
+	 * Skips processing if the field was already processed in this request.
+	 *
 	 * @param bool|null $check      Whether to allow updating metadata for the given type.
 	 * @param int       $object_id  The object ID.
 	 * @param string    $meta_key   The meta key.
@@ -159,6 +199,11 @@ class Meta_Webhook extends Webhook {
 	 * @return bool|null
 	 */
 	public function on_updated_user_meta( ?bool $check, int $object_id, string $meta_key, mixed $meta_value, mixed $prev_value ): ?bool {
+		// Skip if already processed to prevent duplicate emissions
+		if ( $this->is_field_processed( 'user', $object_id, $meta_key ) ) {
+			return $check;
+		}
+
 		if ( empty( $prev_value ) ) {
 			$prev_value = get_user_meta( $object_id, $meta_key, true );
 		}
@@ -182,7 +227,8 @@ class Meta_Webhook extends Webhook {
 	/**
 	 * Handle ACF update events.
 	 *
-	 * Routes ACF field updates to the central meta update handler.
+	 * Routes ACF field updates to the central meta update handler and marks the field
+	 * as processed to prevent duplicate processing via native WordPress hooks.
 	 *
 	 * @param string              $entity   The entity type.
 	 * @param int                 $id       The entity ID.
@@ -195,6 +241,9 @@ class Meta_Webhook extends Webhook {
 		if ( empty( $meta_key ) ) {
 			return;
 		}
+
+		// Mark this field as processed to prevent duplicate handling via native hooks
+		$this->mark_field_processed( $entity, $id, $meta_key );
 
 		$this->on_meta_update( $entity, $id, $meta_key, $value, $original );
 	}
@@ -264,5 +313,53 @@ class Meta_Webhook extends Webhook {
 	 */
 	public function get_handler(): Meta {
 		return $this->meta_handler;
+	}
+
+	/**
+	 * Build a unique cache key for tracking processed field updates.
+	 *
+	 * @param string $entity_type The entity type (post, term, user).
+	 * @param int    $object_id   The object ID.
+	 * @param string $meta_key    The meta key.
+	 * @return string The cache key.
+	 */
+	private function build_field_cache_key( string $entity_type, int $object_id, string $meta_key ): string {
+		return sprintf( '%s:%d:%s', $entity_type, $object_id, $meta_key );
+	}
+
+	/**
+	 * Mark a field as processed to prevent duplicate webhook emissions.
+	 *
+	 * Automatically purges the cache when switching to a different entity,
+	 * keeping memory usage constant during bulk operations.
+	 *
+	 * @param string $entity_type The entity type (post, term, user).
+	 * @param int    $object_id   The object ID.
+	 * @param string $meta_key    The meta key.
+	 */
+	private function mark_field_processed( string $entity_type, int $object_id, string $meta_key ): void {
+		$entity_key = sprintf( '%s:%d', $entity_type, $object_id );
+
+		// Purge cache when switching to a different entity (memory optimization for bulk operations)
+		if ( $this->current_entity !== $entity_key ) {
+			$this->processed_fields = array();
+			$this->current_entity   = $entity_key;
+		}
+
+		$cache_key                            = $this->build_field_cache_key( $entity_type, $object_id, $meta_key );
+		$this->processed_fields[ $cache_key ] = true;
+	}
+
+	/**
+	 * Check if a field was already processed in this request.
+	 *
+	 * @param string $entity_type The entity type (post, term, user).
+	 * @param int    $object_id   The object ID.
+	 * @param string $meta_key    The meta key.
+	 * @return bool True if already processed.
+	 */
+	private function is_field_processed( string $entity_type, int $object_id, string $meta_key ): bool {
+		$cache_key = $this->build_field_cache_key( $entity_type, $object_id, $meta_key );
+		return isset( $this->processed_fields[ $cache_key ] );
 	}
 }

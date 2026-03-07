@@ -1,5 +1,6 @@
 # Dependencies
 vendor/
+node_modules/
 
 # PHPStan cache
 .phpstan.cache
@@ -22,6 +23,7 @@ Thumbs.db
 composer.lock
 
 # Testing
+.phpunit.result.cache
 phpunit.xml
 tests/_output/
 tests/_support/_generated/

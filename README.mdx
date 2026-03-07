@@ -6,6 +6,7 @@ description: Entity-level webhooks for WordPress using Action Scheduler. Sends n
 # WP Webhook Framework
 
 [![Quality Check](https://github.com/JUVOJustin/wp-webhook-framework/actions/workflows/quality-check.yml/badge.svg)](https://github.com/JUVOJustin/wp-webhook-framework/actions/workflows/quality-check.yml)
+[![Integration Tests](https://github.com/JUVOJustin/wp-webhook-framework/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/JUVOJustin/wp-webhook-framework/actions/workflows/integration-tests.yml)
 
 Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking POSTs for create/update/delete of posts, terms, and users. Meta changes trigger the entity update. ACF updates include field context. Features intelligent failure monitoring with email notifications, automatic blocking, and comprehensive filtering options.
 
@@ -39,6 +40,8 @@ Ensure Action Scheduler is active (dependency is declared).
 // Initialize the framework
 \juvo\WP_Webhook_Framework\Service_Provider::register();
 ```
+
+`Service_Provider::register()` is idempotent, so separate plugins can call it independently while sharing the same library checkout.
 
 :::tip
 If you are using a prefixer make sure to exclude this library. Due the strong typings used it will break plugins
@@ -145,6 +148,11 @@ See [Failure Handling](./docs/failure-handling.mdx) for configuration and custom
 
 ```bash
 composer install              # Install dependencies
+npm install                   # Install wp-env tooling
+npm run wp-env:start          # Start WordPress test environment
+npm run composer:install      # Install Composer dependencies inside wp-env
+npm run test:phpunit          # Run application tests
+npm run wp-env:stop           # Stop WordPress test environment
 composer run-script phpstan   # Run static analysis
 composer run-script phpcs     # Lint code
 composer run-script phpcbf    # Auto-fix code style
@@ -157,4 +165,5 @@ composer run-script phpcbf    # Auto-fix code style
 - [Hooks and Filters](./docs/hooks-and-filters.mdx) - All available hooks and filters with examples
 - [Failure Handling](./docs/failure-handling.mdx) - Failure monitoring, retry mechanism, and blocking behavior
 - [Notifications](./docs/notifications.mdx) - Notification system, opt-in pattern, and custom handlers
+- [Testing](./docs/testing.mdx) - wp-env application test suite, fixture plugins, and validation workflow
 - [Webhook Statefulness](./docs/webhook-statefulness.mdx) - Webhook statelessness rules and best practices

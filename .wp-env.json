@@ -1,0 +1,19 @@
+{
+  "core": null,
+  "phpVersion": "8.1",
+  "port": 8888,
+  "autoPort": true,
+  "testsEnvironment": false,
+  "config": {
+    "WP_DEBUG": true,
+    "SCRIPT_DEBUG": true,
+    "WP_ENVIRONMENT_TYPE": "local"
+  },
+  "plugins": [
+    "./tests/wp-env/plugins/wpwf-test-app",
+    "./tests/wp-env/plugins/wpwf-test-secondary"
+  ],
+  "mappings": {
+    "wp-content/wpwf-framework": "."
+  }
+}

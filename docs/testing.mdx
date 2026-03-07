@@ -1,0 +1,50 @@
+---
+title: Testing
+description: Run wp-env application tests against a real WordPress install with fixture plugins that bootstrap the framework themselves.
+sidebar:
+  order: 7
+---
+
+Use the bundled `wp-env` application test setup to validate how the framework behaves inside WordPress.
+
+The suite runs against the development site mounted by `.wp-env.json`, while PHPUnit uses the WordPress core test bootstrap inside that container.
+
+## What the suite covers
+
+- `wp-env` mounts the primary and secondary fixtures as normal plugins and activates both of them on the development site.
+- Each fixture plugin loads the shared library from the repository checkout, loads Action Scheduler, and calls `Service_Provider::register()` on its own.
+- `tests/phpunit/bootstrap.php` loads those same plugin entrypoints for the WordPress core test bootstrap, because that bootstrap uses its own isolated install state.
+- The primary fixture consumer registers built-in post, term, user, and custom webhooks.
+- The secondary fixture consumer registers its own post webhook to validate multi-plugin usage.
+- PHPUnit tests execute scheduled Action Scheduler jobs and assert the final request payloads.
+- The GitHub Actions workflow runs the same suite on every push and pull request.
+
+## Commands
+
+```bash
+npm install
+npm run wp-env:start
+npm run composer:install
+npm run test:phpunit
+npm run wp-env:stop
+```
+
+## Key files
+
+- `.wp-env.json` mounts the repository checkout and activates both fixture plugins.
+- `tests/phpunit/bootstrap.php` loads both plugin entrypoints into the WordPress core PHPUnit bootstrap.
+- `tests/wp-env/plugins/wpwf-test-app/wpwf-test-app.php` boots the shared framework from the primary plugin and defines its fixture hooks.
+- `tests/wp-env/plugins/wpwf-test-secondary/wpwf-test-secondary.php` boots the shared framework from the secondary plugin and defines its fixture hooks.
+- `tests/phpunit/includes/class-wpwf-webhook-test-case.php` provides helpers for capturing requests and executing queued actions.
+- `tests/phpunit/PostWebhookCrudTest.php`, `tests/phpunit/TermWebhookCrudTest.php`, and `tests/phpunit/UserWebhookCrudTest.php` provide separate CRUD examples per entity.
+- `.github/workflows/integration-tests.yml` runs the suite in CI.
+
+## Extending the suite
+
+Add new application tests under `tests/phpunit`. Reuse `WPWF_Webhook_Test_Case` when you need to:
+
+- inspect pending `wpwf_send_webhook` actions
+- execute scheduled actions immediately
+- assert the final HTTP request body and headers
+
+This keeps future validation tests focused on webhook behaviour instead of environment setup.

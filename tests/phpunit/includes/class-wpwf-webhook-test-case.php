@@ -13,76 +13,50 @@ declare(strict_types=1);
 abstract class WPWF_Webhook_Test_Case extends WP_UnitTestCase {
 
 	/**
-	 * Captured webhook requests for the current test.
-	 *
-	 * @var array<int,array<string,mixed>>
-	 */
-	protected static array $captured_requests = array();
-
-	/**
-	 * Resets the queue state before each test.
+	 * Prepare a clean queue and receiver state before each test.
 	 */
 	public function set_up(): void {
 		parent::set_up();
 
 		require_once \ABSPATH . 'wp-admin/includes/user.php';
 
-		self::$captured_requests = array();
 		$this->clear_scheduled_webhooks();
-
-		\add_filter( 'pre_http_request', array( static::class, 'capture_http_request' ), 10, 3 );
+		$this->reset_receiver_logs( true );
 	}
 
 	/**
-	 * Removes test filters and queued work after each test.
+	 * Remove queued actions and captured receiver logs after each test.
 	 */
 	public function tear_down(): void {
-		\remove_filter( 'pre_http_request', array( static::class, 'capture_http_request' ), 10 );
-
 		$this->clear_scheduled_webhooks();
-		self::$captured_requests = array();
+		$this->reset_receiver_logs( false );
 
 		parent::tear_down();
 	}
 
 	/**
-	 * Captures fixture webhook requests and short-circuits remote transport.
+	 * Resolve the receiver base URL used by fixture webhook senders.
 	 *
-	 * @param mixed                $preempt Existing preempt value.
-	 * @param array<string,mixed>  $args    Parsed request arguments.
-	 * @param string               $url     Request URL.
-	 * @return mixed
+	 * @return string
 	 */
-	public static function capture_http_request( $preempt, array $args, string $url ) {
-		if ( ! str_starts_with( $url, 'https://wpwf.test/' ) ) {
-			return $preempt;
+	protected function get_receiver_base_url(): string {
+		$base_url = getenv( 'WPWF_TEST_RECEIVER_BASE_URL' );
+		if ( ! is_string( $base_url ) || '' === $base_url ) {
+			$base_url = 'http://wordpress';
 		}
 
-		$body = array();
-		if ( isset( $args['body'] ) && is_string( $args['body'] ) ) {
-			$decoded_body = json_decode( $args['body'], true );
-			if ( is_array( $decoded_body ) ) {
-				$body = $decoded_body;
-			}
-		}
+		return \untrailingslashit( $base_url );
+	}
 
-		self::$captured_requests[] = array(
-			'url'          => $url,
-			'args'         => $args,
-			'body'         => $body,
-			'webhook_name' => is_array( $args['headers'] ?? null ) ? (string) ( $args['headers']['wpwf-webhook-name'] ?? '' ) : '',
-		);
-
-		return array(
-			'headers'  => array(),
-			'body'     => '{}',
-			'response' => array(
-				'code'    => 200,
-				'message' => 'OK',
-			),
-			'cookies'  => array(),
-			'filename' => null,
-		);
+	/**
+	 * Build a fixture receiver webhook URL.
+	 *
+	 * @param string $target Receiver target identifier.
+	 * @param string $mode   Receiver mode (`success` or `fail`).
+	 * @return string
+	 */
+	protected function get_receiver_webhook_url( string $target, string $mode = 'success' ): string {
+		return $this->get_receiver_base_url() . '/index.php?rest_route=/wpwf-test/v1/receive/' . rawurlencode( $mode ) . '/' . rawurlencode( $target );
 	}
 
 	/**
@@ -96,10 +70,10 @@ abstract class WPWF_Webhook_Test_Case extends WP_UnitTestCase {
 
 		$action_ids = \as_get_scheduled_actions(
 			array(
-				'hook'    => 'wpwf_send_webhook',
-				'status'  => \ActionScheduler_Store::STATUS_PENDING,
-				'orderby' => 'date',
-				'order'   => 'ASC',
+				'hook'     => 'wpwf_send_webhook',
+				'status'   => \ActionScheduler_Store::STATUS_PENDING,
+				'orderby'  => 'date',
+				'order'    => 'ASC',
 				'per_page' => 100,
 			),
 			'ids'
@@ -111,6 +85,14 @@ abstract class WPWF_Webhook_Test_Case extends WP_UnitTestCase {
 
 			if ( ! is_array( $args ) ) {
 				continue;
+			}
+
+			$schedule = $action->get_schedule();
+			if ( is_object( $schedule ) && method_exists( $schedule, 'get_date' ) ) {
+				$date = $schedule->get_date();
+				if ( $date instanceof \DateTimeInterface ) {
+					$args['scheduled_timestamp'] = $date->getTimestamp();
+				}
 			}
 
 			$args['action_id'] = $action_id;
@@ -145,17 +127,31 @@ abstract class WPWF_Webhook_Test_Case extends WP_UnitTestCase {
 
 	/**
 	 * Executes all queued framework webhook actions immediately.
+	 *
+	 * @param bool $allow_failures Whether delivery failures should be swallowed.
 	 */
-	protected function run_scheduled_webhooks(): void {
+	protected function run_scheduled_webhooks( bool $allow_failures = false ): void {
 		$actions = $this->get_scheduled_webhook_actions();
 		$store   = $this->get_action_store();
 
 		foreach ( $actions as $action ) {
-			$action_id = (int) $action['action_id'];
-			$stored_action = $store->fetch_action( $action_id );
-			$stored_action->execute();
-			$store->mark_complete( $action_id );
-			$store->delete_action( $action_id );
+			$action_id      = (int) $action['action_id'];
+			$stored_action  = $store->fetch_action( $action_id );
+
+			try {
+				$stored_action->execute();
+				$store->mark_complete( $action_id );
+			} catch ( \Throwable $throwable ) {
+				if ( method_exists( $store, 'mark_failure' ) ) {
+					$store->mark_failure( $action_id );
+				}
+
+				if ( ! $allow_failures ) {
+					throw $throwable;
+				}
+			} finally {
+				$store->delete_action( $action_id );
+			}
 		}
 	}
 
@@ -198,7 +194,7 @@ abstract class WPWF_Webhook_Test_Case extends WP_UnitTestCase {
 	 * Clears captured webhook requests between assertion phases.
 	 */
 	protected function reset_captured_requests(): void {
-		self::$captured_requests = array();
+		$this->reset_receiver_logs( true );
 	}
 
 	/**
@@ -207,7 +203,7 @@ abstract class WPWF_Webhook_Test_Case extends WP_UnitTestCase {
 	 * @return array<int,array<string,mixed>>
 	 */
 	protected function get_captured_requests(): array {
-		return self::$captured_requests;
+		return $this->get_receiver_logs();
 	}
 
 	/**
@@ -217,8 +213,8 @@ abstract class WPWF_Webhook_Test_Case extends WP_UnitTestCase {
 	 * @return array<string,mixed>
 	 */
 	protected function get_captured_request_by_webhook_name( string $webhook_name ): array {
-		foreach ( self::$captured_requests as $request ) {
-			if ( $webhook_name === $request['webhook_name'] ) {
+		foreach ( $this->get_receiver_logs() as $request ) {
+			if ( $webhook_name === (string) ( $request['webhook_name'] ?? '' ) ) {
 				return $request;
 			}
 		}
@@ -226,5 +222,82 @@ abstract class WPWF_Webhook_Test_Case extends WP_UnitTestCase {
 		$this->fail( sprintf( 'Failed to capture a request for webhook "%s".', $webhook_name ) );
 
 		return array();
+	}
+
+	/**
+	 * Retrieve webhook request logs from the receiver fixture API.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function get_receiver_logs(): array {
+		$response = \wp_remote_post(
+			$this->get_receiver_logs_url(),
+			array(
+				'timeout' => 10,
+			)
+		);
+
+		if ( \is_wp_error( $response ) ) {
+			$this->fail( 'Failed to load receiver logs: ' . $response->get_error_message() );
+			return array();
+		}
+
+		$status_code = (int) \wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $status_code ) {
+			$this->fail( sprintf( 'Failed to load receiver logs. Status code: %d.', $status_code ) );
+			return array();
+		}
+
+		$decoded = json_decode( (string) \wp_remote_retrieve_body( $response ), true );
+		if ( ! is_array( $decoded ) || ! isset( $decoded['logs'] ) || ! is_array( $decoded['logs'] ) ) {
+			$this->fail( 'Receiver returned invalid logs response.' );
+			return array();
+		}
+
+		return array_values( $decoded['logs'] );
+	}
+
+	/**
+	 * Reset receiver logs through the fixture API.
+	 *
+	 * @param bool $strict Whether failures should fail the current test.
+	 */
+	private function reset_receiver_logs( bool $strict ): void {
+		$response = \wp_remote_post(
+			$this->get_receiver_reset_url(),
+			array(
+				'timeout' => 10,
+			)
+		);
+
+		if ( \is_wp_error( $response ) ) {
+			if ( $strict ) {
+				$this->fail( 'Failed to reset receiver logs: ' . $response->get_error_message() );
+			}
+			return;
+		}
+
+		$status_code = (int) \wp_remote_retrieve_response_code( $response );
+		if ( 200 !== $status_code && $strict ) {
+			$this->fail( sprintf( 'Failed to reset receiver logs. Status code: %d.', $status_code ) );
+		}
+	}
+
+	/**
+	 * Build the receiver logs endpoint URL.
+	 *
+	 * @return string
+	 */
+	private function get_receiver_logs_url(): string {
+		return $this->get_receiver_base_url() . '/index.php?rest_route=/wpwf-test/v1/logs';
+	}
+
+	/**
+	 * Build the receiver logs reset endpoint URL.
+	 *
+	 * @return string
+	 */
+	private function get_receiver_reset_url(): string {
+		return $this->get_receiver_base_url() . '/index.php?rest_route=/wpwf-test/v1/logs/reset';
 	}
 }

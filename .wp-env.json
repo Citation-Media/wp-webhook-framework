@@ -3,7 +3,6 @@
   "phpVersion": "8.1",
   "port": 8888,
   "autoPort": true,
-  "testsEnvironment": false,
   "config": {
     "WP_DEBUG": true,
     "SCRIPT_DEBUG": true,
@@ -14,6 +13,7 @@
     "./tests/wp-env/plugins/wpwf-test-secondary"
   ],
   "mappings": {
-    "wp-content/wpwf-framework": "."
+    "wp-content/wpwf-framework": ".",
+    "wp-content/mu-plugins/wpwf-test-receiver.php": "./tests/wp-env/mu-plugins/wpwf-test-receiver.php"
   }
 }

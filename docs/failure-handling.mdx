@@ -18,6 +18,8 @@ For email notifications and custom handlers, see [Notifications](./notifications
 
 **Retry**: Framework automatically retries a single failed webhook event (e.g., "Post #123 update") with exponential backoff.
 
+In `Delivery_Mode::IMMEDIATE`, the first attempt runs in the current request and failed retries are still queued in Action Scheduler.
+
 **Blocking**: Stops all webhooks to a URL after multiple distinct events have failed, preventing resource waste on dead endpoints.
 
 ## Retry Mechanism
@@ -61,7 +63,7 @@ add_filter( 'wpwf_retry_base_time', function ( int $base, string $name, int $cou
 1. **Webhook fails** → Retries attempted according to `max_retries()`
 2. **All retries fail** → Failure count incremented for URL
 3. **Threshold reached** → URL blocked, `wpwf_webhook_blocked` action fired
-4. **Success** → Counter reset, URL unblocked
+4. **Success or expired block window** → Counter reset, URL unblocked
 
 ### Configuration
 
@@ -89,7 +91,7 @@ array(
 )
 ```
 
-**Expiration:** 1 hour (auto-unblock)
+**Expiration:** 1 hour. When a blocked URL is checked after that window, the framework starts a fresh failure window instead of carrying the old failure count forward.
 
 ## Webhook Status Actions
 
@@ -115,6 +117,7 @@ For detailed action documentation, see [Hooks and Filters](./hooks-and-filters.m
 **Files:** `src/Dispatcher.php`, `src/Failure.php`, `src/Webhook.php`
 
 **Key methods:**
+- `Dispatcher::dispatch_immediately()` - Sends immediate first attempt and queues retries on failure
 - `Dispatcher::schedule_retry_if_applicable()` - Schedules retry with backoff
 - `Webhook::calculate_retry_delay()` - Calculates exponential delay
 - `Dispatcher::trigger_webhook_failure()` - Tracks failures, fires actions

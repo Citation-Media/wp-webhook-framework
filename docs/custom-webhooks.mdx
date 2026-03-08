@@ -18,6 +18,7 @@ class Custom_Webhook extends \juvo\WP_Webhook_Framework\Webhook {
         parent::__construct( 'my_custom_webhook' );
         
         $this->max_retries( 3 )
+             ->delivery_mode( \juvo\WP_Webhook_Framework\Delivery_Mode::SCHEDULED )
              ->max_consecutive_failures( 5 )
              ->timeout( 30 )
              ->webhook_url( 'https://api.example.com/custom' )
@@ -49,6 +50,7 @@ add_action( 'wpwf_register_webhooks', function ( Webhook_Registry $registry ): v
 
 | Method | Description | Default |
 |--------|-------------|---------|
+| `delivery_mode(Delivery_Mode)` | Delivery strategy (`SCHEDULED` or `IMMEDIATE`) | `Delivery_Mode::SCHEDULED` |
 | `max_retries(int)` | Retry attempts per failed event | 0 |
 | `max_consecutive_failures(int)` | Failures before blocking (0 disables) | 10 |
 | `timeout(int)` | HTTP timeout in seconds (1-300) | 30 |
@@ -218,4 +220,5 @@ See [Webhook Statefulness](./webhook-statefulness.mdx) for details.
 2. **Check plugin existence** before registering integration webhooks
 3. **Keep webhooks stateless** - pass data to `emit()`, don't store on instance
 4. **Use meaningful names** - lowercase with underscores
-5. **Set appropriate timeouts** - consider endpoint response times
+5. **Set delivery mode intentionally** - use `IMMEDIATE` only when same-request delivery is required
+6. **Set appropriate timeouts** - consider endpoint response times

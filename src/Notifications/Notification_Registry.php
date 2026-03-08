@@ -32,6 +32,16 @@ class Notification_Registry {
 	private array $notifications = array();
 
 	/**
+	 * Initialized notification identifiers.
+	 *
+	 * Guards against duplicate hook registration when multiple webhooks enable
+	 * the same notification handler.
+	 *
+	 * @var array<string,true>
+	 */
+	private array $initialized_notifications = array();
+
+	/**
 	 * Private constructor to enforce singleton pattern.
 	 */
 	private function __construct() {
@@ -83,7 +93,7 @@ class Notification_Registry {
 	 */
 	public function init_all(): void {
 		foreach ( $this->notifications as $notification ) {
-			$notification->init();
+			$this->init_notification( $notification );
 		}
 	}
 
@@ -117,8 +127,24 @@ class Notification_Registry {
 	public function init_selected( array $identifiers ): void {
 		foreach ( $identifiers as $identifier ) {
 			if ( isset( $this->notifications[ $identifier ] ) ) {
-				$this->notifications[ $identifier ]->init();
+				$this->init_notification( $this->notifications[ $identifier ] );
 			}
 		}
+	}
+
+	/**
+	 * Initialize a notification handler only once.
+	 *
+	 * @param Notification $notification The notification handler.
+	 */
+	private function init_notification( Notification $notification ): void {
+		$identifier = $notification->get_identifier();
+
+		if ( isset( $this->initialized_notifications[ $identifier ] ) ) {
+			return;
+		}
+
+		$notification->init();
+		$this->initialized_notifications[ $identifier ] = true;
 	}
 }

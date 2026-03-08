@@ -35,7 +35,7 @@ final class CustomWebhookTest extends WPWF_Webhook_Test_Case {
 
 		$request = $this->get_captured_request_by_webhook_name( 'custom_primary' );
 
-		$this->assertSame( 'https://wpwf.test/primary/custom', $request['url'] );
+		$this->assertSame( $this->get_receiver_webhook_url( 'primary-custom' ), $request['url'] );
 		$this->assertSame( 'trigger', $request['body']['action'] );
 		$this->assertSame( 'custom', $request['body']['entity'] );
 		$this->assertSame( 'job-123', $request['body']['id'] );

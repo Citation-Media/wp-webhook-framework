@@ -32,6 +32,7 @@ require_once $tests_dir . '/includes/functions.php';
 function wpwf_load_fixture_plugins(): void {
 	$wp_content_dir = dirname( __DIR__, 3 );
 
+	require_once $wp_content_dir . '/mu-plugins/wpwf-test-receiver.php';
 	require_once $wp_content_dir . '/plugins/wpwf-test-app/wpwf-test-app.php';
 	require_once $wp_content_dir . '/plugins/wpwf-test-secondary/wpwf-test-secondary.php';
 }

@@ -128,8 +128,8 @@ class Service_Provider {
 	 * Registers webhooks and notification handlers during WordPress initialization.
 	 */
 	public function on_init(): void {
-		$this->register_webhooks();
 		$this->register_available_notifications();
+		$this->register_webhooks();
 	}
 
 	/**

@@ -37,14 +37,14 @@ final class PostWebhookCrudTest extends WPWF_Webhook_Test_Case {
 		$primary_request   = $this->get_captured_request_by_webhook_name( 'post' );
 		$secondary_request = $this->get_captured_request_by_webhook_name( 'post_secondary' );
 
-		$this->assertSame( 'https://wpwf.test/primary/post', $primary_request['url'] );
+		$this->assertSame( $this->get_receiver_webhook_url( 'primary-post' ), $primary_request['url'] );
 		$this->assertSame( 'create', $primary_request['body']['action'] );
 		$this->assertSame( 'post', $primary_request['body']['entity'] );
 		$this->assertSame( $post_id, $primary_request['body']['id'] );
 		$this->assertSame( 'post', $primary_request['body']['post_type'] );
 		$this->assertStringContainsString( '/wp/v2/posts/' . $post_id, $primary_request['body']['rest_url'] );
 
-		$this->assertSame( 'https://wpwf.test/secondary/post', $secondary_request['url'] );
+		$this->assertSame( $this->get_receiver_webhook_url( 'secondary-post' ), $secondary_request['url'] );
 		$this->assertSame( 'create', $secondary_request['body']['action'] );
 		$this->assertSame( $post_id, $secondary_request['body']['id'] );
 

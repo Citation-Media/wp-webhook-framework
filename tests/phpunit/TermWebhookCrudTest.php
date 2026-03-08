@@ -32,7 +32,7 @@ final class TermWebhookCrudTest extends WPWF_Webhook_Test_Case {
 
 		$request = $this->get_captured_request_by_webhook_name( 'term' );
 
-		$this->assertSame( 'https://wpwf.test/primary/term', $request['url'] );
+		$this->assertSame( $this->get_receiver_webhook_url( 'primary-term' ), $request['url'] );
 		$this->assertSame( 'create', $request['body']['action'] );
 		$this->assertSame( 'category', $request['body']['taxonomy'] );
 		$this->assertStringContainsString( '/wp/v2/categories/' . $term_id, $request['body']['rest_url'] );

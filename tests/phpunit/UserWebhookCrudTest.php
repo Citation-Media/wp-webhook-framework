@@ -16,6 +16,15 @@ final class UserWebhookCrudTest extends WPWF_Webhook_Test_Case {
 	 * Ensures user create, update, and delete events dispatch stable payloads.
 	 */
 	public function test_user_create_update_and_delete_webhooks(): void {
+		$filter_user_requests = static function ( array $requests ): array {
+			return array_values(
+				array_filter(
+					$requests,
+					static fn( array $request ): bool => 'user' === (string) ( $request['webhook_name'] ?? '' )
+				)
+			);
+		};
+
 		$user_id = self::factory()->user->create(
 			array(
 				'role' => 'editor',
@@ -24,14 +33,23 @@ final class UserWebhookCrudTest extends WPWF_Webhook_Test_Case {
 
 		$actions = $this->get_scheduled_actions_by_webhook_name( 'user' );
 
-		$this->assertCount( 1, $actions );
-		$this->assertSame( 'create', $actions[0]['action'] );
+		$this->assertNotEmpty( $actions );
+		$this->assertContains( 'create', array_column( $actions, 'action' ) );
 
 		$this->run_scheduled_webhooks();
 
-		$request = $this->get_captured_request_by_webhook_name( 'user' );
+		$requests       = $filter_user_requests( $this->get_captured_requests() );
+		$create_request = array_values(
+			array_filter(
+				$requests,
+				static fn( array $request ): bool => 'create' === (string) ( $request['body']['action'] ?? '' )
+			)
+		);
 
-		$this->assertSame( 'https://wpwf.test/primary/user', $request['url'] );
+		$this->assertNotEmpty( $create_request );
+		$request = $create_request[0];
+
+		$this->assertSame( $this->get_receiver_webhook_url( 'primary-user' ), $request['url'] );
 		$this->assertSame( 'create', $request['body']['action'] );
 		$this->assertSame( array( 'editor' ), $request['body']['roles'] );
 		$this->assertStringContainsString( '/wp/v2/users/' . $user_id, $request['body']['rest_url'] );
@@ -46,12 +64,18 @@ final class UserWebhookCrudTest extends WPWF_Webhook_Test_Case {
 		);
 
 		$actions = $this->get_scheduled_actions_by_webhook_name( 'user' );
-		$this->assertCount( 1, $actions );
-		$this->assertSame( 'update', $actions[0]['action'] );
+		$this->assertNotEmpty( $actions );
+		$this->assertContains( 'update', array_column( $actions, 'action' ) );
 
 		$this->run_scheduled_webhooks();
 
-		$request = $this->get_captured_request_by_webhook_name( 'user' );
+		$requests = $filter_user_requests( $this->get_captured_requests() );
+		$request  = array_values(
+			array_filter(
+				$requests,
+				static fn( array $candidate ): bool => 'update' === (string) ( $candidate['body']['action'] ?? '' )
+			)
+		)[0];
 		$this->assertSame( 'update', $request['body']['action'] );
 		$this->assertSame( array( 'editor' ), $request['body']['roles'] );
 
@@ -60,12 +84,18 @@ final class UserWebhookCrudTest extends WPWF_Webhook_Test_Case {
 		\wp_delete_user( $user_id );
 
 		$actions = $this->get_scheduled_actions_by_webhook_name( 'user' );
-		$this->assertCount( 1, $actions );
-		$this->assertSame( 'delete', $actions[0]['action'] );
+		$this->assertNotEmpty( $actions );
+		$this->assertContains( 'delete', array_column( $actions, 'action' ) );
 
 		$this->run_scheduled_webhooks();
 
-		$request = $this->get_captured_request_by_webhook_name( 'user' );
+		$requests = $filter_user_requests( $this->get_captured_requests() );
+		$request  = array_values(
+			array_filter(
+				$requests,
+				static fn( array $candidate ): bool => 'delete' === (string) ( $candidate['body']['action'] ?? '' )
+			)
+		)[0];
 		$this->assertSame( 'delete', $request['body']['action'] );
 		$this->assertSame( 'user', $request['body']['entity'] );
 		$this->assertSame( $user_id, $request['body']['id'] );

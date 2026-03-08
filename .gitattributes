@@ -1,0 +1,13 @@
+/.github export-ignore
+/.gitignore export-ignore
+/.phpunit.result.cache export-ignore
+/.wp-env.json export-ignore
+/AGENTS.md export-ignore
+/composer.lock export-ignore
+/docs export-ignore
+/package-lock.json export-ignore
+/package.json export-ignore
+/phpcs.xml export-ignore
+/phpstan.neon export-ignore
+/phpunit.xml.dist export-ignore
+/tests export-ignore

@@ -25,10 +25,11 @@ Each handler:
 
 ```php
 add_action( 'wpwf_register_webhooks', function ( Webhook_Registry $registry ): void {
-    $post_webhook = $registry->get( 'post' );
-    if ( null !== $post_webhook ) {
-        $post_webhook->notifications( array( 'blocked' ) );
-    }
+    $post_webhook = new \juvo\WP_Webhook_Framework\Webhooks\Post_Webhook();
+    $post_webhook->webhook_url( 'https://api.example.com/posts' )
+                 ->notifications( array( 'blocked' ) );
+
+    $registry->register( $post_webhook );
 } );
 ```
 
@@ -97,10 +98,11 @@ add_action( 'wpwf_register_notifications', function ( Notification_Registry $reg
 
 ```php
 add_action( 'wpwf_register_webhooks', function ( Webhook_Registry $registry ): void {
-    $webhook = $registry->get( 'post' );
-    if ( null !== $webhook ) {
-        $webhook->notifications( array( 'blocked', 'slack' ) );
-    }
+    $webhook = new \juvo\WP_Webhook_Framework\Webhooks\Post_Webhook();
+    $webhook->webhook_url( 'https://api.example.com/posts' )
+            ->notifications( array( 'blocked', 'slack' ) );
+
+    $registry->register( $webhook );
 } );
 ```
 
@@ -131,10 +133,8 @@ add_action( 'wpwf_register_notifications', function ( Notification_Registry $reg
 
 ```php
 add_action( 'wpwf_register_webhooks', function ( Webhook_Registry $registry ): void {
-    $webhook = $registry->get( 'post' );
-    if ( null === $webhook ) {
-        return;
-    }
+    $webhook = new \juvo\WP_Webhook_Framework\Webhooks\Post_Webhook();
+    $webhook->webhook_url( 'https://api.example.com/posts' );
 
     $notifications = array( 'blocked' );
     if ( 'production' === wp_get_environment_type() ) {
@@ -142,6 +142,7 @@ add_action( 'wpwf_register_webhooks', function ( Webhook_Registry $registry ): v
     }
     
     $webhook->notifications( $notifications );
+    $registry->register( $webhook );
 } );
 ```
 

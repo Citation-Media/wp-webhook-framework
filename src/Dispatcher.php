@@ -5,6 +5,8 @@
  * @package juvo\WP_Webhook_Framework
  */
 
+declare(strict_types=1);
+
 namespace juvo\WP_Webhook_Framework;
 
 use ActionScheduler_Store;
@@ -16,16 +18,14 @@ use juvo\WP_Webhook_Framework\Entities\User;
 use WP_Exception;
 
 /**
- * Queues and sends webhooks. AS-only. Dedupe on action+entity+id.
+ * Queues and sends webhooks with scheduled and immediate modes.
+ *
+ * Scheduled mode deduplicates by action+entity+id while pending.
  */
 class Dispatcher {
 
-
 	/**
 	 * Schedule a webhook if not already pending with same (action, entity, id).
-	 *
-	 * Accepts a Webhook instance for strongly-typed configuration access during scheduling.
-	 * Only the webhook name is persisted to Action Scheduler for later lookup.
 	 *
 	 * @param string              $action        The action type.
 	 * @param string              $entity        The entity type.
@@ -37,36 +37,15 @@ class Dispatcher {
 	 * @throws WP_Exception If Action Scheduler is not active or URL/payload issues.
 	 */
 	public function schedule( string $action, string $entity, int|string $id, string $url = '', array $payload = array(), array $headers = array() ): void {
+		$this->ensure_action_scheduler_available();
 
-		if ( ! function_exists( 'as_schedule_single_action' ) || ! function_exists( 'as_get_scheduled_actions' ) ) {
-			throw new WP_Exception( 'action_scheduler_not_active' );
-		}
-
-		// Allow filters to modify or set the URL at dispatch time
-		$url = apply_filters( 'wpwf_url', $url, $entity, $id );
-
-		if ( empty( $url ) ) {
-			throw new WP_Exception( 'webhook_url_not_set' );
-		}
-
-		// Check if this URL is blocked due to too many failures
-		if ( $this->is_url_blocked( $url ) ) {
-			throw new WP_Exception( 'webhook_url_blocked' );
-		}
-
-		$original_payload = $payload;
-		$payload          = apply_filters( 'wpwf_payload', $payload, $entity, $id );
-		if ( false === $payload || null === $payload ) {
+		$dispatch_data = $this->resolve_dispatch_data( $entity, $id, $url, $payload );
+		if ( null === $dispatch_data ) {
 			return;
 		}
 
-		if ( ! is_array( $payload ) ) {
-			throw new WP_Exception( 'webhook_payload_invalid' );
-		}
-
-		if ( empty( $payload ) && ! empty( $original_payload ) ) {
-			throw new WP_Exception( 'webhook_payload_empty' );
-		}
+		$url     = $dispatch_data['url'];
+		$payload = $dispatch_data['payload'];
 
 		$group = sanitize_title( 'wpwf-' . $entity );
 
@@ -106,7 +85,94 @@ class Dispatcher {
 	}
 
 	/**
-	 * Action Scheduler callback. Sends the POST request non-blocking.
+	 * Deliver a webhook immediately in the current request.
+	 *
+	 * Uses the same URL and payload filters as scheduled dispatch.
+	 * Failures can still schedule asynchronous retries.
+	 *
+	 * @param string              $action        The action type.
+	 * @param string              $entity        The entity type.
+	 * @param int|string          $id            The entity ID.
+	 * @param string              $url           The webhook URL.
+	 * @param array<string,mixed> $payload       The request payload data.
+	 * @param array<string,mixed> $headers       The request headers.
+	 *
+	 * @throws WP_Exception If URL/payload/webhook configuration is invalid.
+	 */
+	public function dispatch_immediately( string $action, string $entity, int|string $id, string $url = '', array $payload = array(), array $headers = array() ): void {
+		$dispatch_data = $this->resolve_dispatch_data( $entity, $id, $url, $payload );
+		if ( null === $dispatch_data ) {
+			return;
+		}
+
+		$webhook = $this->get_webhook_from_headers( $headers );
+
+		$this->send_webhook_request(
+			$dispatch_data['url'],
+			$action,
+			$entity,
+			$id,
+			$dispatch_data['payload'],
+			$headers,
+			$webhook
+		);
+	}
+
+	/**
+	 * Ensure Action Scheduler APIs required for queued actions are available.
+	 *
+	 * @throws WP_Exception If Action Scheduler functions are not loaded.
+	 */
+	private function ensure_action_scheduler_available(): void {
+		if ( ! function_exists( 'as_schedule_single_action' ) || ! function_exists( 'as_get_scheduled_actions' ) ) {
+			throw new WP_Exception( 'action_scheduler_not_active' );
+		}
+	}
+
+	/**
+	 * Resolve URL and payload through shared dispatch validation.
+	 *
+	 * @param string              $entity  The entity type.
+	 * @param int|string          $id      The entity ID.
+	 * @param string              $url     The webhook URL.
+	 * @param array<string,mixed> $payload The payload data.
+	 * @return array{url: string, payload: array<string,mixed>}|null
+	 *
+	 * @throws WP_Exception If URL or payload validation fails.
+	 */
+	private function resolve_dispatch_data( string $entity, int|string $id, string $url, array $payload ): ?array {
+		$url = apply_filters( 'wpwf_url', $url, $entity, $id );
+
+		if ( empty( $url ) ) {
+			throw new WP_Exception( 'webhook_url_not_set' );
+		}
+
+		if ( $this->is_url_blocked( $url ) ) {
+			throw new WP_Exception( 'webhook_url_blocked' );
+		}
+
+		$original_payload = $payload;
+		$payload          = apply_filters( 'wpwf_payload', $payload, $entity, $id );
+		if ( false === $payload || null === $payload ) {
+			return null;
+		}
+
+		if ( ! is_array( $payload ) ) {
+			throw new WP_Exception( 'webhook_payload_invalid' );
+		}
+
+		if ( empty( $payload ) && ! empty( $original_payload ) ) {
+			throw new WP_Exception( 'webhook_payload_empty' );
+		}
+
+		return array(
+			'url'     => $url,
+			'payload' => $payload,
+		);
+	}
+
+	/**
+	 * Action Scheduler callback for queued webhook deliveries.
 	 *
 	 * Reconstructs the webhook instance from the registry using the persisted webhook name.
 	 *
@@ -117,20 +183,50 @@ class Dispatcher {
 	 * @param array<string,mixed> $payload      The payload data.
 	 * @param array<string,mixed> $headers      The HTTP headers.
 	 *
-	 * @throws WP_Exception If Action Scheduler is not active or URL is blocked.
+	 * @throws WP_Exception If URL is blocked or webhook is not found.
 	 */
-	public function process_scheduled_webhook( string $url, string $action, string $entity, $id, array $payload, array $headers ): void {
+	public function process_scheduled_webhook( string $url, string $action, string $entity, int|string $id, array $payload, array $headers ): void {
+		$webhook = $this->get_webhook_from_headers( $headers );
 
-		// Check if this URL is blocked due to too many failures
-		if ( $this->is_url_blocked( $url ) ) {
-			throw new WP_Exception( 'webhook_url_blocked' );
+		$this->send_webhook_request( $url, $action, $entity, $id, $payload, $headers, $webhook );
+	}
+
+	/**
+	 * Resolve the webhook instance from scheduled headers.
+	 *
+	 * @param array<string,mixed> $headers The webhook headers.
+	 * @return Webhook
+	 *
+	 * @throws WP_Exception If the webhook cannot be resolved from the registry.
+	 */
+	private function get_webhook_from_headers( array $headers ): Webhook {
+		$registry = Webhook_Registry::instance();
+		$name     = isset( $headers['wpwf-webhook-name'] ) ? (string) $headers['wpwf-webhook-name'] : '';
+		$webhook  = $registry->get( $name );
+
+		if ( null === $webhook ) {
+			throw new WP_Exception( 'Webhook not found in registry.' );
 		}
 
-		// Reconstruct webhook instance from registry
-		$registry = Webhook_Registry::instance();
-		$webhook  = $registry->get( $headers['wpwf-webhook-name'] ?? '' );
-		if ( empty( $webhook ) ) {
-			throw new WP_Exception( 'Webhook not found in registry.' );
+		return $webhook;
+	}
+
+	/**
+	 * Send a webhook request and handle retries and failure tracking.
+	 *
+	 * @param string              $url     The webhook URL.
+	 * @param string              $action  The action type.
+	 * @param string              $entity  The entity type.
+	 * @param int|string          $id      The entity ID.
+	 * @param array<string,mixed> $payload The payload data.
+	 * @param array<string,mixed> $headers The HTTP headers.
+	 * @param Webhook             $webhook The webhook configuration instance.
+	 *
+	 * @throws WP_Exception If delivery fails.
+	 */
+	private function send_webhook_request( string $url, string $action, string $entity, int|string $id, array $payload, array $headers, Webhook $webhook ): void {
+		if ( $this->is_url_blocked( $url ) ) {
+			throw new WP_Exception( 'webhook_url_blocked' );
 		}
 
 		$payload = $this->prepare_delivery_payload( $entity, $id, $payload );
@@ -170,18 +266,16 @@ class Dispatcher {
 
 		$response = wp_remote_post( $url, $args );
 
-		// Check if the request was successful
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 			$this->schedule_retry_if_applicable( $url, $action, $entity, $id, $payload, $headers, $webhook );
 			$this->trigger_webhook_failure( $url, $response, $webhook );
-		} else {
-
-			// Reset failure count and unblock on success
-			$failure_dto = Failure::create_fresh();
-			$failure_dto->save( $url );
-
-			do_action( 'wpwf_webhook_success', $url, $body, $response, $webhook );
+			return;
 		}
+
+		$failure_dto = Failure::create_fresh();
+		$failure_dto->save( $url );
+
+		do_action( 'wpwf_webhook_success', $url, $body, $response, $webhook );
 	}
 
 	/**
@@ -304,8 +398,8 @@ class Dispatcher {
 
 		// Check if block has expired (more than 1 hour ago)
 		if ( $failure_dto->is_block_expired() ) {
-			// Unblock automatically
-			$failure_dto->set_blocked( false );
+			// Expired blocks start a fresh failure window.
+			$failure_dto->reset();
 			$failure_dto->save( $url );
 			return false;
 		}
@@ -324,7 +418,7 @@ class Dispatcher {
 	 * @param array<string,mixed> $headers      The headers.
 	 * @param Webhook|null        $webhook      Webhook instance for configuration.
 	 */
-	private function schedule_retry_if_applicable( string $url, string $action, string $entity, $id, array $payload, array $headers, ?Webhook $webhook ): void {
+	private function schedule_retry_if_applicable( string $url, string $action, string $entity, int|string $id, array $payload, array $headers, ?Webhook $webhook ): void {
 		if ( ! $webhook ) {
 			return;
 		}
@@ -343,6 +437,8 @@ class Dispatcher {
 
 		// Update headers with new retry count
 		$headers['wpwf-retry-count'] = $next_retry;
+
+		$this->ensure_action_scheduler_available();
 
 		// Schedule the retry
 		as_schedule_single_action(

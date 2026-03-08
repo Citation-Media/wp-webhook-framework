@@ -1,0 +1,56 @@
+---
+title: Testing
+description: Run wp-env application tests against a real WordPress install with fixture plugins that bootstrap the framework themselves.
+sidebar:
+  order: 7
+---
+
+Use the bundled `wp-env` application test setup to validate how the framework behaves inside WordPress.
+
+The suite runs against the development site mounted by `.wp-env.json`, while PHPUnit uses the WordPress core test bootstrap inside that container.
+
+## What the suite covers
+
+- `wp-env` mounts the primary and secondary fixture plugins plus a receiver MU plugin used to capture real HTTP webhook deliveries.
+- Each fixture plugin loads the shared library from the repository checkout, loads Action Scheduler, and calls `Service_Provider::register()` on its own.
+- `tests/phpunit/bootstrap.php` loads the same fixture plugin entrypoints for the WordPress core test bootstrap, because that bootstrap uses its own isolated install state.
+- The primary fixture consumer registers built-in post, term, user, and custom webhooks.
+- The secondary fixture consumer registers its own post webhook to validate multi-plugin usage.
+- PHPUnit tests execute scheduled Action Scheduler jobs, call real HTTP receiver endpoints, and assert persisted delivery logs.
+- The GitHub Actions workflow runs the same suite on every push and pull request.
+
+## Commands
+
+```bash
+npm install
+npm run wp-env:start
+npm run composer:install
+npm run test:phpunit
+npm run wp-env:stop
+```
+
+## Key files
+
+- `.wp-env.json` mounts the repository checkout and maps the receiver MU plugin.
+- `tests/phpunit/bootstrap.php` loads fixture plugin entrypoints into the WordPress core PHPUnit bootstrap.
+- `tests/wp-env/mu-plugins/wpwf-test-receiver.php` handles incoming webhook HTTP requests and exposes log/reset endpoints for assertions.
+- `tests/wp-env/plugins/wpwf-test-app/wpwf-test-app.php` boots the shared framework from the primary plugin and defines its fixture hooks.
+- `tests/wp-env/plugins/wpwf-test-secondary/wpwf-test-secondary.php` boots the shared framework from the secondary plugin and defines its fixture hooks.
+- `tests/phpunit/includes/class-wpwf-webhook-test-case.php` provides helpers for receiver log management and queued action execution.
+- `tests/phpunit/PostWebhookCrudTest.php`, `tests/phpunit/TermWebhookCrudTest.php`, and `tests/phpunit/UserWebhookCrudTest.php` provide separate CRUD examples per entity.
+- `tests/phpunit/MetaWebhookTest.php` covers meta emission modes, parent entity updates, and delivery payload enrichment.
+- `tests/phpunit/DeliveryModeTest.php` covers scheduled vs immediate dispatch behavior.
+- `tests/phpunit/WebhookFilterTest.php` covers runtime filters for delivery mode, URL routing, payload suppression, headers, and request body changes.
+- `tests/phpunit/WebhookFailureHandlingTest.php` covers retries, backoff scheduling metadata, and URL blocking behavior.
+- `tests/phpunit/NotificationAndFailureStateTest.php` covers blocked email notifications and expired-block recovery.
+- `.github/workflows/integration-tests.yml` runs the suite in CI.
+
+## Extending the suite
+
+Add new application tests under `tests/phpunit`. Reuse `WPWF_Webhook_Test_Case` when you need to:
+
+- inspect pending `wpwf_send_webhook` actions
+- execute scheduled actions immediately
+- assert receiver log entries (URL, headers, payload, webhook name)
+
+This keeps future validation tests focused on webhook behaviour instead of environment setup.

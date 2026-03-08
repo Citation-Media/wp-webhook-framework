@@ -22,7 +22,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: vendor
-          key: ${{ runner.os }}-vendor-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-vendor-${{ hashFiles('composer.lock') }}
 
       - name: Setup PHP
         if: steps.vendor-cache.outputs.cache-hit != 'true'
@@ -41,7 +41,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: vendor
-          key: ${{ runner.os }}-vendor-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-vendor-${{ hashFiles('composer.lock') }}
 
   phpstan:
     name: PHPStan
@@ -60,10 +60,11 @@ jobs:
           coverage: none
 
       - name: Restore vendor cache
+        id: vendor-cache
         uses: actions/cache/restore@v4
         with:
           path: vendor
-          key: ${{ runner.os }}-vendor-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-vendor-${{ hashFiles('composer.lock') }}
 
       - name: Run PHPStan
         id: phpstan
@@ -72,7 +73,11 @@ jobs:
 
       - name: Show PHPStan results in PR
         if: ${{ always() && steps.phpstan.outcome == 'failure' }}
-        run: cs2pr ./phpstan-report.xml
+        run: test -s ./phpstan-report.xml && cs2pr ./phpstan-report.xml || true
+
+      - name: Fail on PHPStan errors
+        if: ${{ steps.phpstan.outcome == 'failure' }}
+        run: exit 1
 
   phpcs:
     name: PHPCS
@@ -91,10 +96,11 @@ jobs:
           coverage: none
 
       - name: Restore vendor cache
+        id: vendor-cache
         uses: actions/cache/restore@v4
         with:
           path: vendor
-          key: ${{ runner.os }}-vendor-${{ hashFiles('**/composer.lock') }}
+          key: ${{ runner.os }}-vendor-${{ hashFiles('composer.lock') }}
 
       - name: Run PHPCS
         id: phpcs
@@ -103,4 +109,8 @@ jobs:
 
       - name: Show PHPCS results in PR
         if: ${{ always() && steps.phpcs.outcome == 'failure' }}
-        run: cs2pr ./phpcs-report.xml --graceful-warnings
+        run: test -s ./phpcs-report.xml && cs2pr ./phpcs-report.xml --graceful-warnings || true
+
+      - name: Fail on PHPCS errors
+        if: ${{ steps.phpcs.outcome == 'failure' }}
+        run: exit 1

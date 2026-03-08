@@ -1,0 +1,101 @@
+---
+title: Email Webhooks
+description: Capture wp_mail() calls as structured webhook payloads and optionally replace WordPress email delivery.
+sidebar:
+  order: 6
+---
+
+Capture WordPress emails through `wp_mail()` and forward them as structured webhook payloads.
+
+## Registering the Built-in Email Webhook
+
+```php
+use juvo\WP_Webhook_Framework\Webhook_Registry;
+use juvo\WP_Webhook_Framework\Webhooks\Email_Webhook;
+
+add_action( 'wpwf_register_webhooks', function ( Webhook_Registry $registry ): void {
+    $email = new Email_Webhook();
+    $email->webhook_url( 'https://api.example.com/emails' );
+
+    $registry->register( $email );
+} );
+```
+
+Once registered, the webhook listens to every `wp_mail()` call by default.
+
+## Structured Payload
+
+The request body keeps the standard framework envelope and adds an `email` object:
+
+```json
+{
+  "action": "send",
+  "entity": "email",
+  "id": "2d53f2c4-9bc1-4f74-a4ef-c19e16a7a8d1",
+  "email": {
+    "to": [
+      {
+        "email": "jane@example.com",
+        "name": "Jane Recipient"
+      }
+    ],
+    "cc": [],
+    "bcc": [],
+    "reply_to": [],
+    "sender": "sender@example.com",
+    "sender_name": "Sender Example",
+    "subject": "Welcome aboard",
+    "content": "<p>Hello world</p>",
+    "content_type": "text/html",
+    "charset": "UTF-8",
+    "headers": {
+      "x-custom-trace": "abc123"
+    },
+    "attachments": []
+  }
+}
+```
+
+## Aborting the Original Email Send
+
+Use `abort_wp_mail()` when the webhook should replace WordPress email delivery entirely:
+
+```php
+use juvo\WP_Webhook_Framework\Webhook_Registry;
+use juvo\WP_Webhook_Framework\Webhooks\Email_Webhook;
+
+add_action( 'wpwf_register_webhooks', function ( Webhook_Registry $registry ): void {
+    $email = new Email_Webhook();
+
+    $email->webhook_url( 'https://api.example.com/emails' )
+          ->abort_wp_mail();
+
+    $registry->register( $email );
+} );
+```
+
+This uses WordPress' `pre_wp_mail` filter, which runs before PHPMailer is initialized. Because of that, SMTP plugins that hook into `phpmailer_init` or replace the PHPMailer transport never receive the original email when abort mode is enabled.
+
+## Filtering Email Webhooks
+
+- Use `wpwf_payload` to filter the final webhook payload like any other entity (`$entity === 'email'`).
+- Use `wpwf_email_payload` to target only the structured `email` object before it is wrapped in the request body.
+- Use `wpwf_email_abort_send` to decide per-email whether the original `wp_mail()` call should be short-circuited.
+
+```php
+use juvo\WP_Webhook_Framework\Webhooks\Email_Webhook;
+
+add_filter( 'wpwf_email_abort_send', function ( bool $abort, array $email_data, Email_Webhook $webhook ): bool {
+    if ( 'Critical alert' !== $email_data['subject'] ) {
+        return $abort;
+    }
+
+    return true;
+}, 10, 3 );
+```
+
+## Compatibility Notes
+
+- The webhook only observes emails sent through `wp_mail()`.
+- Short-circuit mode returns `true` to WordPress, so callers still see the mail send as successful.
+- Because interception happens before PHPMailer setup, this is the safest place to avoid duplicate sending with SMTP plugins.

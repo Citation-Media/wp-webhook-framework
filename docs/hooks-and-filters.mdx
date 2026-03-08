@@ -86,7 +86,7 @@ Filter webhook payloads before scheduling. Payloads contain event-time fields on
 
 **Parameters:**
 - `$payload` (array<string,mixed>) - The webhook payload data
-- `$entity` (string) - The entity type (post, term, user, meta)
+- `$entity` (string) - The entity type (post, term, user, meta, email)
 - `$id` (int|string) - The entity ID
 
 **Returns:** array<string,mixed>|false
@@ -122,7 +122,7 @@ The framework already enriches `rest_url` at delivery time when possible. Use th
 **Parameters:**
 - `$body` (array<string,mixed>) - The full webhook body
 - `$action` (string) - The action type
-- `$entity` (string) - The entity type (post, term, user, meta)
+- `$entity` (string) - The entity type (post, term, user, meta, email)
 - `$id` (int|string) - The entity ID
 - `$payload` (array<string,mixed>) - The scheduled payload data
 - `$webhook` (`Webhook`) - The webhook instance
@@ -302,6 +302,50 @@ add_filter( 'wpwf_delivery_mode', function ( string $delivery_mode, string $webh
 }, 10, 2 );
 ```
 
+### `wpwf_email_payload`
+
+Filter the structured email payload before it is wrapped into the webhook request body. Return `false` to skip webhook emission for the current `wp_mail()` call.
+
+**Parameters:**
+- `$email_data` (array<string,mixed>|false) - The structured email payload
+- `$atts` (array<string,mixed>) - The filtered `wp_mail()` arguments
+- `$webhook` (`Email_Webhook`) - The email webhook instance
+
+**Returns:** array<string,mixed>|false
+
+```php
+add_filter( 'wpwf_email_payload', function ( array $email_data, array $atts ): array|false {
+    if ( 'Daily digest' !== $atts['subject'] ) {
+        return $email_data;
+    }
+
+    return false;
+}, 10, 3 );
+```
+
+### `wpwf_email_abort_send`
+
+Filter whether the email webhook should short-circuit the original `wp_mail()` call.
+
+**Parameters:**
+- `$abort` (bool) - Whether the original mail send should be skipped
+- `$email_data` (array<string,mixed>) - The structured email payload
+- `$webhook` (`Email_Webhook`) - The email webhook instance
+
+**Returns:** bool
+
+```php
+use juvo\WP_Webhook_Framework\Webhooks\Email_Webhook;
+
+add_filter( 'wpwf_email_abort_send', function ( bool $abort, array $email_data, Email_Webhook $webhook ): bool {
+    if ( 'Critical alert' !== $email_data['subject'] ) {
+        return $abort;
+    }
+
+    return true;
+}, 10, 3 );
+```
+
 ### `wpwf_retry_base_time`
 
 Filter the base time (seconds) for exponential backoff. Default: 60.
@@ -336,9 +380,31 @@ Example payload (post):
 ```json
 {
   "action": "create|update|delete",
-  "entity": "post|term|user|meta",
+  "entity": "post|term|user|meta|email",
   "id": 123,
   "post_type": "post"
+}
+```
+
+Example payload (email):
+
+```json
+{
+  "action": "send",
+  "entity": "email",
+  "id": "2d53f2c4-9bc1-4f74-a4ef-c19e16a7a8d1",
+  "email": {
+    "to": [
+      {
+        "email": "jane@example.com",
+        "name": "Jane Recipient"
+      }
+    ],
+    "sender": "sender@example.com",
+    "sender_name": "Sender Example",
+    "subject": "Welcome aboard",
+    "content": "<p>Hello world</p>"
+  }
 }
 ```
 
@@ -362,3 +428,5 @@ Filters are applied in this order:
 4. `wpwf_request_body` - Modify final request body before send
 5. `wpwf_headers` - Customize HTTP headers
 6. `wpwf_excluded_meta` - Filter meta keys (meta webhooks only)
+7. `wpwf_email_payload` - Adjust structured email payloads before emission
+8. `wpwf_email_abort_send` - Decide whether email webhooks replace `wp_mail()`

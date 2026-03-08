@@ -342,13 +342,14 @@ abstract class Webhook {
 	 * Payload and headers passed as parameters are merged with configured headers.
 	 *
 	 * @param string              $action      The action type (create, update, delete).
-	 * @param string              $entity_type The entity type (post, term, user, meta).
+	 * @param string              $entity_type The entity type (post, term, user, meta, email).
 	 * @param int|string          $entity_id   The entity ID.
 	 * @param array<string,mixed> $payload     Dynamic payload data for this emission.
 	 * @param array<string,mixed> $headers       Optional dynamic headers (merged with get_headers()).
 	 * @param Delivery_Mode|null  $delivery_mode Optional per-emission mode override.
+	 * @return bool True when the webhook was dispatched or queued.
 	 */
-	protected function emit( string $action, string $entity_type, int|string $entity_id, array $payload = array(), array $headers = array(), ?Delivery_Mode $delivery_mode = null ): void {
+	protected function emit( string $action, string $entity_type, int|string $entity_id, array $payload = array(), array $headers = array(), ?Delivery_Mode $delivery_mode = null ): bool {
 		$registry   = Webhook_Registry::instance();
 		$dispatcher = $registry->get_dispatcher();
 
@@ -360,13 +361,15 @@ abstract class Webhook {
 		try {
 			if ( Delivery_Mode::IMMEDIATE === $resolved_delivery_mode ) {
 				$dispatcher->dispatch_immediately( $action, $entity_type, $entity_id, $this->get_webhook_url(), $payload, $final_headers );
-				return;
+				return true;
 			}
 
 			$dispatcher->schedule( $action, $entity_type, $entity_id, $this->get_webhook_url(), $payload, $final_headers );
+			return true;
 		} catch ( \WP_Exception $e ) {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error, WordPress.Security.EscapeOutput.OutputNotEscaped -- Error handling context, no escaping needed.
 			trigger_error( sprintf( 'Failed to emit webhook "%s": %s', $this->name, $e->getMessage() ), E_USER_WARNING );
+			return false;
 		}
 	}
 }

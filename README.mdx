@@ -1,6 +1,6 @@
 ---
 title: WP Webhook Framework
-description: Entity-level webhooks for WordPress with scheduled and immediate delivery modes, retries, and failure monitoring.
+description: Entity-level webhooks for WordPress with scheduled and immediate delivery modes, retries, failure monitoring, and structured email webhooks.
 ---
 
 # WP Webhook Framework
@@ -8,7 +8,7 @@ description: Entity-level webhooks for WordPress with scheduled and immediate de
 [![Quality Check](https://github.com/JUVOJustin/wp-webhook-framework/actions/workflows/quality-check.yml/badge.svg)](https://github.com/JUVOJustin/wp-webhook-framework/actions/workflows/quality-check.yml)
 [![Integration Tests](https://github.com/JUVOJustin/wp-webhook-framework/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/JUVOJustin/wp-webhook-framework/actions/workflows/integration-tests.yml)
 
-Entity-level webhooks for WordPress using Action Scheduler with optional immediate delivery mode. Sends POSTs for create/update/delete of posts, terms, and users. Meta changes trigger the entity update. ACF updates include field context. Features intelligent failure monitoring with email notifications, automatic blocking, and comprehensive filtering options.
+Entity-level webhooks for WordPress using Action Scheduler with optional immediate delivery mode. Sends POSTs for create/update/delete of posts, terms, users, and outbound emails. Meta changes trigger the entity update. ACF updates include field context. Features intelligent failure monitoring with email notifications, automatic blocking, structured email payloads, and comprehensive filtering options.
 
 ## Features
 
@@ -16,6 +16,8 @@ Entity-level webhooks for WordPress using Action Scheduler with optional immedia
 - **Action Scheduler dispatch** - 5s delay for queued webhooks with deduplication
 - **Automatic deduplication** - Dispatcher-level on action+entity+id and meta-level per-request dedup for plugin hooks (ACF, Meta Box, etc.)
 - **Entity-aware delivery payloads** - Derives post_type, taxonomy, and roles at send time
+- **Structured email webhooks** - Captures `wp_mail()` calls with recipients, sender, subject, content, and headers
+- **Optional mail replacement** - Can short-circuit WordPress email delivery before PHPMailer or SMTP plugins run
 - **Send-time enrichment** - Adds REST URLs when available
 - **ACF integration** - Adds field key/name context to meta changes
 - **Registry pattern** - Extensible webhook system with custom configurations
@@ -87,6 +89,21 @@ add_action('wpwf_register_webhooks', function ($registry) {
 
 Immediate mode sends the first attempt in the current request. If it fails, retries are still queued asynchronously with exponential backoff.
 
+### Email Webhooks
+
+```php
+use juvo\WP_Webhook_Framework\Webhooks\Email_Webhook;
+
+add_action('wpwf_register_webhooks', function ($registry) {
+    $email = new Email_Webhook();
+    $email->webhook_url('https://api.example.com/emails')
+          ->abort_wp_mail();
+    $registry->register($email);
+});
+```
+
+The email webhook captures each `wp_mail()` call as a structured payload. With `abort_wp_mail()` enabled, WordPress reports the email as handled and skips PHPMailer plus SMTP plugin transport setup.
+
 ### Filter Payloads
 
 ```php
@@ -110,6 +127,7 @@ See [Hooks and Filters](./docs/hooks-and-filters.mdx) for all available hooks an
 - **Webhook** (abstract) - Base class for all webhooks
 - **Dispatcher** - Schedules and sends HTTP requests via Action Scheduler
 - **Entity Handlers** - Prepare payloads for posts, terms, users, and meta
+- **Email_Webhook** - Captures structured `wp_mail()` payloads before PHPMailer runs
 
 **Data Flow:**
 ```
@@ -134,6 +152,28 @@ Example post webhook payload:
   "entity": "post",
   "id": 123,
   "post_type": "post"
+}
+```
+
+Example email webhook payload:
+
+```json
+{
+  "action": "send",
+  "entity": "email",
+  "id": "2d53f2c4-9bc1-4f74-a4ef-c19e16a7a8d1",
+  "email": {
+    "to": [
+      {
+        "email": "jane@example.com",
+        "name": "Jane Recipient"
+      }
+    ],
+    "sender": "sender@example.com",
+    "sender_name": "Sender Example",
+    "subject": "Welcome aboard",
+    "content": "<p>Hello world</p>"
+  }
 }
 ```
 
@@ -182,6 +222,7 @@ composer run-script phpcbf    # Auto-fix code style
 
 - [Configuration](./docs/configuration.mdx) - Webhook configuration methods, registry setup, and options
 - [Custom Webhooks](./docs/custom-webhooks.mdx) - Creating custom webhooks, plugin integrations (WooCommerce, CF7, Gravity Forms)
+- [Email Webhooks](./docs/email-webhooks.mdx) - Capturing `wp_mail()` calls, structured payloads, and optional send aborting
 - [Hooks and Filters](./docs/hooks-and-filters.mdx) - All available hooks and filters with examples
 - [Failure Handling](./docs/failure-handling.mdx) - Failure monitoring, retry mechanism, and blocking behavior
 - [Notifications](./docs/notifications.mdx) - Notification system, opt-in pattern, and custom handlers

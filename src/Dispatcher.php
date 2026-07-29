@@ -205,7 +205,7 @@ class Dispatcher {
 		$webhook  = $registry->get( $name );
 
 		if ( null === $webhook ) {
-			throw new WP_Exception( 'Webhook not found in registry.' );
+			throw new WP_Exception( 'webhook_not_found' );
 		}
 
 		return $webhook;

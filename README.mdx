@@ -31,7 +31,18 @@ Entity-level webhooks for WordPress using Action Scheduler with optional immedia
 composer require citation-media/wp-webhook-framework
 ```
 
-Requires PHP 8.1+.
+### Requirements
+
+| Requirement | Version |
+| --- | --- |
+| WordPress | 6.7 or newer |
+| PHP | 8.1 or newer |
+| Action Scheduler | 3.7 or newer (declared as a Composer dependency) |
+
+WordPress 6.7 is a hard requirement: the dispatcher signals every delivery and
+configuration failure by throwing [`WP_Exception`](https://developer.wordpress.org/reference/classes/wp_exception/),
+which was added to core in 6.7.0. On older releases those throw sites raise an
+uncatchable `Error: Class "WP_Exception" not found` instead.
 
 Ensure Action Scheduler is active (dependency is declared).
 

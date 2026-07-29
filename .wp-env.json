@@ -14,6 +14,7 @@
   ],
   "mappings": {
     "wp-content/wpwf-framework": ".",
+    "woocommerce/action-scheduler": "./vendor/woocommerce/action-scheduler",
     "wp-content/mu-plugins/wpwf-test-receiver.php": "./tests/wp-env/mu-plugins/wpwf-test-receiver.php"
   }
 }

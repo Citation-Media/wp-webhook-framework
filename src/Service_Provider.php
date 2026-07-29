@@ -205,21 +205,11 @@ class Service_Provider {
 	 * @return void
 	 */
 	private static function bootstrap_action_scheduler(): void {
-		// Both layouts occur and neither path covers the other: the first applies
-		// when this package sits in a consumer's vendor tree, the second when this
-		// repository is checked out on its own (as the wp-env test suite runs it).
-		$paths = array(
-			// vendor/<vendor>/wp-webhook-framework/src -> vendor/woocommerce/...
-			__DIR__ . '/../../../woocommerce/action-scheduler/action-scheduler.php',
-			// <repo>/src -> <repo>/vendor/woocommerce/...
-			__DIR__ . '/../vendor/woocommerce/action-scheduler/action-scheduler.php',
-		);
+		// vendor/<vendor>/wp-webhook-framework/src -> vendor/woocommerce/...
+		$path = __DIR__ . '/../../../woocommerce/action-scheduler/action-scheduler.php';
 
-		foreach ( $paths as $path ) {
-			if ( file_exists( $path ) ) {
-				require_once $path;
-				return;
-			}
+		if ( file_exists( $path ) ) {
+			require_once $path;
 		}
 	}
 }

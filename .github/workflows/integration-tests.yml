@@ -8,8 +8,24 @@ on:
 
 jobs:
   application-tests:
-    name: wp-env Application Tests
+    name: wp-env Application Tests (WP ${{ matrix.wordpress.name }})
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        wordpress:
+          # Minimum supported release. WP_Exception landed in core in 6.7.0, and
+          # the dispatcher throws it on every failure path, so this job proves the
+          # documented floor still boots.
+          - name: '6.7 (minimum)'
+            core: 'WordPress/WordPress#6.7'
+          # Latest release, resolved by wp-env when core is unset.
+          - name: 'latest'
+            core: ''
+
+    env:
+      WP_ENV_CORE: ${{ matrix.wordpress.core }}
 
     steps:
       - name: Checkout code

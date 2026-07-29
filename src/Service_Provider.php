@@ -20,6 +20,15 @@ use juvo\WP_Webhook_Framework\Notifications\Notification_Registry;
 class Service_Provider {
 
 	/**
+	 * Minimum WordPress version supported by the framework.
+	 *
+	 * The dispatcher signals every failure by throwing `WP_Exception`, which was
+	 * added to WordPress core in 6.7.0. On older releases those throw sites raise
+	 * an uncatchable "class not found" fatal, so the framework refuses to boot.
+	 */
+	public const MIN_WP_VERSION = '6.7';
+
+	/**
 	 * Singleton instance.
 	 *
 	 * @var Service_Provider|null
@@ -79,12 +88,49 @@ class Service_Provider {
 	}
 
 	/**
+	 * Check whether the current WordPress version supports the framework.
+	 *
+	 * @return bool True when WordPress is new enough to boot the framework.
+	 */
+	public static function is_supported_wp_version(): bool {
+		return version_compare( (string) get_bloginfo( 'version' ), self::MIN_WP_VERSION, '>=' );
+	}
+
+	/**
+	 * Print an admin notice explaining why the framework did not boot.
+	 */
+	public static function render_unsupported_wp_version_notice(): void {
+		printf(
+			'<div class="notice notice-error"><p>%s</p></div>',
+			esc_html(
+				sprintf(
+					/* translators: 1: required WordPress version, 2: current WordPress version */
+					__( 'WP Webhook Framework requires WordPress %1$s or newer and has been disabled. This site runs WordPress %2$s.', 'wp-webhook-framework' ),
+					self::MIN_WP_VERSION,
+					(string) get_bloginfo( 'version' )
+				)
+			)
+		);
+	}
+
+	/**
 	 * Registers all actions/filters. Safe to call multiple times.
+	 *
+	 * Bails out without registering anything when the WordPress version is older
+	 * than {@see self::MIN_WP_VERSION}, surfacing an admin notice instead of
+	 * letting the dispatcher fatal on a missing `WP_Exception` class.
 	 */
 	public static function register(): void {
 
 		// Guard against duplicate registration
 		if ( self::$registered ) {
+			return;
+		}
+
+		// Bail before loading Action Scheduler; an unsupported site boots nothing.
+		if ( ! self::is_supported_wp_version() ) {
+			add_action( 'admin_notices', array( self::class, 'render_unsupported_wp_version_notice' ) );
+			self::$registered = true;
 			return;
 		}
 

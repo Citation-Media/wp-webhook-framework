@@ -88,6 +88,8 @@ class Service_Provider {
 			return;
 		}
 
+		self::bootstrap_action_scheduler();
+
 		$instance = self::get_instance();
 
 		add_action(
@@ -178,5 +180,38 @@ class Service_Provider {
 	public static function get_dispatcher(): Dispatcher {
 		$instance = self::get_instance();
 		return $instance->dispatcher;
+	}
+
+	/**
+	 * Require the bundled Action Scheduler bootstrap.
+	 *
+	 * Action Scheduler ships as a `type:wordpress-plugin` package, so Composer
+	 * never requires it for us. It is loaded unconditionally on purpose: every
+	 * copy registers itself with Action Scheduler's version manager, which then
+	 * initialises the newest one. Skipping the require when some other plugin
+	 * already loaded an older copy would keep ours out of that comparison.
+	 * Loading twice is safe -- the bootstrap guards itself per version.
+	 *
+	 * Call `register()` while your plugin file loads. Action Scheduler registers
+	 * on `plugins_loaded` at priority 0 and initialises at priority 1, so a
+	 * `register()` call made from inside `plugins_loaded` loads it too late for
+	 * those hooks and leaves the `as_*` functions undefined.
+	 *
+	 * @return void
+	 */
+	private static function bootstrap_action_scheduler(): void {
+		$paths = array(
+			// Installed as a dependency: vendor/<vendor>/<pkg>/src -> vendor.
+			__DIR__ . '/../../../woocommerce/action-scheduler/action-scheduler.php',
+			// This repository checked out on its own.
+			__DIR__ . '/../vendor/woocommerce/action-scheduler/action-scheduler.php',
+		);
+
+		foreach ( $paths as $path ) {
+			if ( file_exists( $path ) ) {
+				require_once $path;
+				return;
+			}
+		}
 	}
 }

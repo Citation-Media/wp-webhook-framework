@@ -12,7 +12,7 @@ The suite runs against the development site mounted by `.wp-env.json`, while PHP
 ## What the suite covers
 
 - `wp-env` mounts the primary and secondary fixture plugins plus a receiver MU plugin used to capture real HTTP webhook deliveries.
-- Each fixture plugin loads the shared library from the repository checkout, loads Action Scheduler, and calls `Service_Provider::register()` on its own.
+- Each fixture plugin loads the shared library from the repository checkout and calls `Service_Provider::register()` on its own, which also loads the bundled Action Scheduler.
 - `tests/phpunit/bootstrap.php` loads the same fixture plugin entrypoints for the WordPress core test bootstrap, because that bootstrap uses its own isolated install state.
 - The primary fixture consumer registers built-in post, term, user, and custom webhooks.
 - The secondary fixture consumer registers its own post webhook to validate multi-plugin usage.

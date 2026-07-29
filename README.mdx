@@ -33,7 +33,11 @@ composer require citation-media/wp-webhook-framework
 
 Requires PHP 8.1+.
 
-Ensure Action Scheduler is active (dependency is declared).
+Action Scheduler comes bundled and is loaded by `Service_Provider::register()` — no separate plugin activation needed. If other plugins ship their own copy, Action Scheduler's version manager initialises the newest one.
+
+:::caution
+Call `Service_Provider::register()` while your plugin file loads, not from inside `plugins_loaded`. Action Scheduler registers itself on `plugins_loaded` at priority 0, so registering later loads it too late to initialise.
+:::
 
 ### Basic Setup
 

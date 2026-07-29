@@ -14,14 +14,18 @@ The suite runs against the development site mounted by `.wp-env.json`, while PHP
 - `wp-env` mounts the primary and secondary fixture plugins plus a receiver MU plugin used to capture real HTTP webhook deliveries.
 - Each fixture plugin loads the shared library from the repository checkout and calls `Service_Provider::register()` on its own, which also loads the bundled Action Scheduler.
 - `tests/phpunit/bootstrap.php` loads the same fixture plugin entrypoints for the WordPress core test bootstrap, because that bootstrap uses its own isolated install state.
-
-:::note
-`.wp-env.json` maps `vendor/woocommerce/action-scheduler` to `woocommerce/action-scheduler` at the WordPress root. In a real install the framework sits in the consumer's vendor tree and resolves Action Scheduler at `../../../woocommerce/action-scheduler`; here it is mounted at `wp-content/wpwf-framework`, so that same relative path lands at the WordPress root. The mapping recreates the production layout so the suite exercises the real resolution path instead of a test-only fallback.
-:::
 - The primary fixture consumer registers built-in post, term, user, and custom webhooks.
 - The secondary fixture consumer registers its own post webhook to validate multi-plugin usage.
 - PHPUnit tests execute scheduled Action Scheduler jobs, call real HTTP receiver endpoints, and assert persisted delivery logs.
 - The GitHub Actions workflow runs the same suite on every push and pull request.
+
+## Action Scheduler mapping
+
+`.wp-env.json` maps `vendor/woocommerce/action-scheduler` to `woocommerce/action-scheduler` at the WordPress root. In a real install the framework sits in the consumer's vendor tree and resolves Action Scheduler at `../../../woocommerce/action-scheduler`; here it is mounted at `wp-content/wpwf-framework`, so that same relative path lands at the WordPress root. The mapping recreates the production layout so the suite exercises the real resolution path instead of a test-only fallback.
+
+:::caution
+`wp-env` only creates a mapping when its source path already exists at start, and skips it silently otherwise. On a fresh checkout `vendor/` does not exist until `composer:install` has run — and that runs inside the container. `test:integration` therefore starts `wp-env` a second time after installing dependencies, so the mapping is created. Removing that second start makes the whole suite fail with `Class "ActionScheduler" not found`.
+:::
 
 ## Commands
 

@@ -208,8 +208,18 @@ class Service_Provider {
 		// vendor/<vendor>/wp-webhook-framework/src -> vendor/woocommerce/...
 		$path = __DIR__ . '/../../../woocommerce/action-scheduler/action-scheduler.php';
 
-		if ( file_exists( $path ) ) {
-			require_once $path;
+		if ( ! file_exists( $path ) ) {
+			// Without this the failure only surfaces as an undefined `as_*`
+			// function once a webhook is emitted, far from the actual cause.
+			wp_trigger_error(
+				__METHOD__,
+				'Action Scheduler was not found at ' . $path . '. Webhooks cannot be dispatched. '
+					. 'This usually means "composer install" has not run, or the consuming project '
+					. 'relocates type:wordpress-plugin packages via extra.installer-paths.'
+			);
+			return;
 		}
+
+		require_once $path;
 	}
 }

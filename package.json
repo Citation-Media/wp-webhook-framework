@@ -8,7 +8,7 @@
     "wp-env:destroy": "wp-env destroy --force",
     "composer:install": "wp-env run cli --env-cwd=wp-content/wpwf-framework composer install --prefer-dist --no-progress",
     "test:phpunit": "wp-env run cli --env-cwd=wp-content/wpwf-framework vendor/bin/phpunit -c phpunit.xml.dist",
-    "test:integration": "npm run wp-env:start && npm run composer:install && npm run wp-env:start && npm run test:phpunit"
+    "test:integration": "npm run wp-env:start && npm run composer:install && npm run test:phpunit"
   },
   "devDependencies": {
     "@wordpress/env": "11.1.0"

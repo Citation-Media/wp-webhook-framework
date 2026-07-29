@@ -19,12 +19,12 @@ The suite runs against the development site mounted by `.wp-env.json`, while PHP
 - PHPUnit tests execute scheduled Action Scheduler jobs, call real HTTP receiver endpoints, and assert persisted delivery logs.
 - The GitHub Actions workflow runs the same suite on every push and pull request.
 
-## Action Scheduler mapping
+## Action Scheduler resolution
 
-`.wp-env.json` maps `vendor/woocommerce/action-scheduler` to `woocommerce/action-scheduler` at the WordPress root. In a real install the framework sits in the consumer's vendor tree and resolves Action Scheduler at `../../../woocommerce/action-scheduler`; here it is mounted at `wp-content/wpwf-framework`, so that same relative path lands at the WordPress root. The mapping recreates the production layout so the suite exercises the real resolution path instead of a test-only fallback.
+`Service_Provider::bootstrap_action_scheduler()` checks two paths. The first is the production layout, where the framework sits in a consumer's vendor tree and Action Scheduler resolves at `../../../woocommerce/action-scheduler`. The second covers this repository checked out on its own, where `vendor/` lives inside the checkout — which is how the suite runs it, so the suite exercises the second path.
 
 :::caution
-`wp-env` only creates a mapping when its source path already exists at start, and skips it silently otherwise. On a fresh checkout `vendor/` does not exist until `composer:install` has run — and that runs inside the container. `test:integration` therefore starts `wp-env` a second time after installing dependencies, so the mapping is created. Removing that second start makes the whole suite fail with `Class "ActionScheduler" not found`.
+Do not try to recreate the production layout with a `.wp-env.json` mapping pointing into `vendor/`. On a fresh checkout that path does not exist when `wp-env start` runs, because `composer:install` runs afterwards inside the container. On Linux, Docker then creates the missing source as a **root-owned** directory, and the subsequent `composer install` fails with `vendor/composer does not exist and could not be created`. Docker Desktop on macOS behaves differently, so this passes locally and breaks CI.
 :::
 
 ## Commands

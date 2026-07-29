@@ -205,21 +205,31 @@ class Service_Provider {
 	 * @return void
 	 */
 	private static function bootstrap_action_scheduler(): void {
-		// vendor/<vendor>/wp-webhook-framework/src -> vendor/woocommerce/...
-		$path = __DIR__ . '/../../../woocommerce/action-scheduler/action-scheduler.php';
+		// Two layouts occur and neither path covers the other. The first is the
+		// production one and is checked first, so a real install never evaluates
+		// the second; the second only matters when this repository is checked out
+		// on its own, which is how the wp-env test suite runs it.
+		$paths = array(
+			// vendor/<vendor>/wp-webhook-framework/src -> vendor/woocommerce/...
+			__DIR__ . '/../../../woocommerce/action-scheduler/action-scheduler.php',
+			// <repo>/src -> <repo>/vendor/woocommerce/...
+			__DIR__ . '/../vendor/woocommerce/action-scheduler/action-scheduler.php',
+		);
 
-		if ( ! file_exists( $path ) ) {
-			// Without this the failure only surfaces as an undefined `as_*`
-			// function once a webhook is emitted, far from the actual cause.
-			wp_trigger_error(
-				__METHOD__,
-				'Action Scheduler was not found at ' . $path . '. Webhooks cannot be dispatched. '
-					. 'This usually means "composer install" has not run, or the consuming project '
-					. 'relocates type:wordpress-plugin packages via extra.installer-paths.'
-			);
-			return;
+		foreach ( $paths as $path ) {
+			if ( file_exists( $path ) ) {
+				require_once $path;
+				return;
+			}
 		}
 
-		require_once $path;
+		// Without this the failure only surfaces as an undefined `as_*` function
+		// once a webhook is emitted, far from the actual cause.
+		wp_trigger_error(
+			__METHOD__,
+			'Action Scheduler was not found. Webhooks cannot be dispatched. This usually '
+				. 'means "composer install" has not run, or the consuming project relocates '
+				. 'type:wordpress-plugin packages via extra.installer-paths.'
+		);
 	}
 }

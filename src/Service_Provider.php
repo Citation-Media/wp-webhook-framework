@@ -127,11 +127,14 @@ class Service_Provider {
 			return;
 		}
 
+		// Bail before loading Action Scheduler; an unsupported site boots nothing.
 		if ( ! self::is_supported_wp_version() ) {
 			add_action( 'admin_notices', array( self::class, 'render_unsupported_wp_version_notice' ) );
 			self::$registered = true;
 			return;
 		}
+
+		self::bootstrap_action_scheduler();
 
 		$instance = self::get_instance();
 
@@ -223,5 +226,56 @@ class Service_Provider {
 	public static function get_dispatcher(): Dispatcher {
 		$instance = self::get_instance();
 		return $instance->dispatcher;
+	}
+
+	/**
+	 * Require the bundled Action Scheduler bootstrap.
+	 *
+	 * Action Scheduler ships as a `type:wordpress-plugin` package, so Composer
+	 * never requires it for us.
+	 *
+	 * There is deliberately no "is Action Scheduler already loaded" check. Every
+	 * bundled copy must register itself so the version manager can initialise the
+	 * newest one; bailing out because another plugin loaded an older copy first
+	 * would pin the site to that older version. Action Scheduler exposes no
+	 * constant or global to test anyway -- it guards itself with the
+	 * version-suffixed `action_scheduler_register_*()` function in
+	 * action-scheduler.php, which together with `require_once` already makes a
+	 * repeat load a no-op.
+	 *
+	 * Call `register()` while your plugin file loads. Action Scheduler registers
+	 * on `plugins_loaded` at priority 0 and initialises at priority 1, so a
+	 * `register()` call made from inside `plugins_loaded` loads it too late for
+	 * those hooks and leaves the `as_*` functions undefined.
+	 *
+	 * @return void
+	 */
+	private static function bootstrap_action_scheduler(): void {
+		// Two layouts occur and neither path covers the other. The first is the
+		// production one and is checked first, so a real install never evaluates
+		// the second; the second only matters when this repository is checked out
+		// on its own, which is how the wp-env test suite runs it.
+		$paths = array(
+			// vendor/<vendor>/wp-webhook-framework/src -> vendor/woocommerce/...
+			__DIR__ . '/../../../woocommerce/action-scheduler/action-scheduler.php',
+			// <repo>/src -> <repo>/vendor/woocommerce/...
+			__DIR__ . '/../vendor/woocommerce/action-scheduler/action-scheduler.php',
+		);
+
+		foreach ( $paths as $path ) {
+			if ( file_exists( $path ) ) {
+				require_once $path;
+				return;
+			}
+		}
+
+		// Without this the failure only surfaces as an undefined `as_*` function
+		// once a webhook is emitted, far from the actual cause.
+		wp_trigger_error(
+			__METHOD__,
+			'Action Scheduler was not found. Webhooks cannot be dispatched. This usually '
+				. 'means "composer install" has not run, or the consuming project relocates '
+				. 'type:wordpress-plugin packages via extra.installer-paths.'
+		);
 	}
 }

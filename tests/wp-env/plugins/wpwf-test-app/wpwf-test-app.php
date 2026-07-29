@@ -20,9 +20,8 @@ use juvo\WP_Webhook_Framework\Webhooks\Post_Webhook;
 use juvo\WP_Webhook_Framework\Webhooks\Term_Webhook;
 use juvo\WP_Webhook_Framework\Webhooks\User_Webhook;
 
-$wp_content_dir        = dirname( __DIR__, 2 );
-$autoload_path         = $wp_content_dir . '/wpwf-framework/vendor/autoload.php';
-$action_scheduler_path = $wp_content_dir . '/wpwf-framework/vendor/woocommerce/action-scheduler/action-scheduler.php';
+$wp_content_dir = dirname( __DIR__, 2 );
+$autoload_path  = $wp_content_dir . '/wpwf-framework/vendor/autoload.php';
 
 if ( ! file_exists( $autoload_path ) ) {
 	return;
@@ -30,8 +29,7 @@ if ( ! file_exists( $autoload_path ) ) {
 
 require_once $autoload_path;
 
-require_once $action_scheduler_path;
-
+// Also loads the bundled Action Scheduler; no separate require needed.
 Service_Provider::register();
 
 /**

@@ -12,12 +12,20 @@ The suite runs against the development site mounted by `.wp-env.json`, while PHP
 ## What the suite covers
 
 - `wp-env` mounts the primary and secondary fixture plugins plus a receiver MU plugin used to capture real HTTP webhook deliveries.
-- Each fixture plugin loads the shared library from the repository checkout, loads Action Scheduler, and calls `Service_Provider::register()` on its own.
+- Each fixture plugin loads the shared library from the repository checkout and calls `Service_Provider::register()` on its own, which also loads the bundled Action Scheduler.
 - `tests/phpunit/bootstrap.php` loads the same fixture plugin entrypoints for the WordPress core test bootstrap, because that bootstrap uses its own isolated install state.
 - The primary fixture consumer registers built-in post, term, user, and custom webhooks.
 - The secondary fixture consumer registers its own post webhook to validate multi-plugin usage.
 - PHPUnit tests execute scheduled Action Scheduler jobs, call real HTTP receiver endpoints, and assert persisted delivery logs.
 - The GitHub Actions workflow runs the same suite on every push and pull request.
+
+## Action Scheduler resolution
+
+`Service_Provider::bootstrap_action_scheduler()` checks two paths. The first is the production layout, where the framework sits in a consumer's vendor tree and Action Scheduler resolves at `../../../woocommerce/action-scheduler`. The second covers this repository checked out on its own, where `vendor/` lives inside the checkout — which is how the suite runs it, so the suite exercises the second path.
+
+:::caution
+Do not try to recreate the production layout with a `.wp-env.json` mapping pointing into `vendor/`. On a fresh checkout that path does not exist when `wp-env start` runs, because `composer:install` runs afterwards inside the container. On Linux, Docker then creates the missing source as a **root-owned** directory, and the subsequent `composer install` fails with `vendor/composer does not exist and could not be created`. Docker Desktop on macOS behaves differently, so this passes locally and breaks CI.
+:::
 
 ## Commands
 

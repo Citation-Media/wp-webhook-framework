@@ -186,11 +186,16 @@ class Service_Provider {
 	 * Require the bundled Action Scheduler bootstrap.
 	 *
 	 * Action Scheduler ships as a `type:wordpress-plugin` package, so Composer
-	 * never requires it for us. It is loaded unconditionally on purpose: every
-	 * copy registers itself with Action Scheduler's version manager, which then
-	 * initialises the newest one. Skipping the require when some other plugin
-	 * already loaded an older copy would keep ours out of that comparison.
-	 * Loading twice is safe -- the bootstrap guards itself per version.
+	 * never requires it for us.
+	 *
+	 * There is deliberately no "is Action Scheduler already loaded" check. Every
+	 * bundled copy must register itself so the version manager can initialise the
+	 * newest one; bailing out because another plugin loaded an older copy first
+	 * would pin the site to that older version. Action Scheduler exposes no
+	 * constant or global to test anyway -- it guards itself with the
+	 * version-suffixed `action_scheduler_register_*()` function in
+	 * action-scheduler.php, which together with `require_once` already makes a
+	 * repeat load a no-op.
 	 *
 	 * Call `register()` while your plugin file loads. Action Scheduler registers
 	 * on `plugins_loaded` at priority 0 and initialises at priority 1, so a
@@ -200,10 +205,13 @@ class Service_Provider {
 	 * @return void
 	 */
 	private static function bootstrap_action_scheduler(): void {
+		// Both layouts occur and neither path covers the other: the first applies
+		// when this package sits in a consumer's vendor tree, the second when this
+		// repository is checked out on its own (as the wp-env test suite runs it).
 		$paths = array(
-			// Installed as a dependency: vendor/<vendor>/<pkg>/src -> vendor.
+			// vendor/<vendor>/wp-webhook-framework/src -> vendor/woocommerce/...
 			__DIR__ . '/../../../woocommerce/action-scheduler/action-scheduler.php',
-			// This repository checked out on its own.
+			// <repo>/src -> <repo>/vendor/woocommerce/...
 			__DIR__ . '/../vendor/woocommerce/action-scheduler/action-scheduler.php',
 		);
 

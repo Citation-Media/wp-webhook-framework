@@ -70,6 +70,13 @@ abstract class Webhook {
 	protected string $webhook_url = '';
 
 	/**
+	 * Delivery mode for webhook emissions.
+	 *
+	 * @var Delivery_Mode
+	 */
+	protected Delivery_Mode $delivery_mode;
+
+	/**
 	 * Additional HTTP headers for webhook requests.
 	 *
 	 * Stateless configuration set during init(), not per-emission data.
@@ -94,6 +101,7 @@ abstract class Webhook {
 	public function __construct( string $name ) {
 		$this->name                         = $name;
 		$this->headers['wpwf-webhook-name'] = $name;
+		$this->delivery_mode                = Delivery_Mode::SCHEDULED;
 	}
 
 	/**
@@ -143,6 +151,17 @@ abstract class Webhook {
 	 */
 	public function webhook_url( string $url ): static {
 		$this->webhook_url = $url;
+		return $this;
+	}
+
+	/**
+	 * Set delivery mode for webhook emissions.
+	 *
+	 * @param Delivery_Mode $mode The delivery mode.
+	 * @return static
+	 */
+	public function delivery_mode( Delivery_Mode $mode ): static {
+		$this->delivery_mode = $mode;
 		return $this;
 	}
 
@@ -281,6 +300,24 @@ abstract class Webhook {
 	}
 
 	/**
+	 * Get the configured delivery mode.
+	 *
+	 * @return Delivery_Mode
+	 */
+	public function get_delivery_mode(): Delivery_Mode {
+		/**
+		 * Filter the webhook delivery mode.
+		 *
+		 * @param string $delivery_mode The delivery mode value (`scheduled` or `immediate`).
+		 * @param string $webhook_name  The webhook name/identifier.
+		 */
+		$delivery_mode = apply_filters( 'wpwf_delivery_mode', $this->delivery_mode->value, $this->name );
+
+		$resolved_mode = Delivery_Mode::tryFrom( $delivery_mode );
+		return $resolved_mode ?? $this->delivery_mode;
+	}
+
+	/**
 	 * Get additional HTTP headers.
 	 *
 	 * Returns stateless configuration headers set during init().
@@ -301,27 +338,35 @@ abstract class Webhook {
 	/**
 	 * Emit a webhook with the given parameters.
 	 *
-	 * Schedules a webhook delivery via the Dispatcher using this webhook's configuration.
+	 * Dispatches a webhook via the Dispatcher using this webhook's configuration.
 	 * Payload and headers passed as parameters are merged with configured headers.
 	 *
 	 * @param string              $action      The action type (create, update, delete).
 	 * @param string              $entity_type The entity type (post, term, user, meta).
 	 * @param int|string          $entity_id   The entity ID.
 	 * @param array<string,mixed> $payload     Dynamic payload data for this emission.
-	 * @param array<string,mixed> $headers     Optional dynamic headers (merged with get_headers()).
+	 * @param array<string,mixed> $headers       Optional dynamic headers (merged with get_headers()).
+	 * @param Delivery_Mode|null  $delivery_mode Optional per-emission mode override.
 	 */
-	protected function emit( string $action, string $entity_type, int|string $entity_id, array $payload = array(), array $headers = array() ): void {
+	protected function emit( string $action, string $entity_type, int|string $entity_id, array $payload = array(), array $headers = array(), ?Delivery_Mode $delivery_mode = null ): void {
 		$registry   = Webhook_Registry::instance();
 		$dispatcher = $registry->get_dispatcher();
 
 		// Merge passed headers with configured headers (passed headers take precedence)
 		$final_headers = array_merge( $this->get_headers(), $headers );
 
+		$resolved_delivery_mode = $delivery_mode ?? $this->get_delivery_mode();
+
 		try {
+			if ( Delivery_Mode::IMMEDIATE === $resolved_delivery_mode ) {
+				$dispatcher->dispatch_immediately( $action, $entity_type, $entity_id, $this->get_webhook_url(), $payload, $final_headers );
+				return;
+			}
+
 			$dispatcher->schedule( $action, $entity_type, $entity_id, $this->get_webhook_url(), $payload, $final_headers );
 		} catch ( \WP_Exception $e ) {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_trigger_error, WordPress.Security.EscapeOutput.OutputNotEscaped -- Error handling context, no escaping needed.
-			trigger_error( sprintf( 'Failed to schedule webhook "%s": %s', $this->name, $e->getMessage() ), E_USER_WARNING );
+			trigger_error( sprintf( 'Failed to emit webhook "%s": %s', $this->name, $e->getMessage() ), E_USER_WARNING );
 		}
 	}
 }

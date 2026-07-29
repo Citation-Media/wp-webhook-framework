@@ -231,7 +231,7 @@ class Meta_Webhook extends Webhook {
 			return;
 		}
 
-		$this->on_meta_update( 'post', $object_id, $meta_key, $meta_value );
+		$this->on_meta_delete( 'post', $object_id, $meta_key );
 	}
 
 	/**
@@ -263,7 +263,7 @@ class Meta_Webhook extends Webhook {
 	 * @param mixed  $meta_value The meta value.
 	 */
 	public function on_deleted_term_meta( $meta_ids, int $object_id, string $meta_key, $meta_value ): void {
-		$this->on_meta_update( 'term', $object_id, $meta_key, $meta_value );
+		$this->on_meta_delete( 'term', $object_id, $meta_key );
 	}
 
 	/**
@@ -295,7 +295,34 @@ class Meta_Webhook extends Webhook {
 	 * @param mixed  $meta_value The meta value.
 	 */
 	public function on_deleted_user_meta( $meta_ids, int $object_id, string $meta_key, $meta_value ): void {
-		$this->on_meta_update( 'user', $object_id, $meta_key, $meta_value );
+		$this->on_meta_delete( 'user', $object_id, $meta_key );
+	}
+
+	/**
+	 * Handle explicit metadata deletion events.
+	 *
+	 * Deletion hooks already guarantee the intended action, so this path bypasses
+	 * value-based change detection and emits a delete directly.
+	 *
+	 * @param string $meta_type The meta type (post, term, user).
+	 * @param int    $object_id The object ID.
+	 * @param string $meta_key  The meta key.
+	 */
+	private function on_meta_delete( string $meta_type, int $object_id, string $meta_key ): void {
+		if ( $this->meta_handler->is_meta_key_excluded( $meta_key, $meta_type, $object_id ) ) {
+			return;
+		}
+
+		self::unmark_as_processed( $meta_type, $object_id, $meta_key );
+
+		if ( $this->emission_mode->includes_meta() ) {
+			$payload = $this->meta_handler->prepare_payload( $meta_type, $object_id, $meta_key );
+			$this->emit( 'delete', 'meta', $object_id, $payload );
+		}
+
+		if ( $this->emission_mode->includes_entity() ) {
+			$this->trigger_entity_update( $meta_type, $object_id );
+		}
 	}
 
 	/**

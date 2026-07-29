@@ -2,6 +2,10 @@
 
 ## Commands
 - `composer install` - Install dependencies
+- `npm install` - Install wp-env tooling
+- `npm run wp-env:start` - Start the local WordPress test environment
+- `npm run test:phpunit` - Run the wp-env application test suite
+- `npm run wp-env:stop` - Stop the local WordPress test environment
 - `composer run-script phpstan` - Run static analysis (PHPStan level 6)
 - `composer run-script phpcs` - Lint code (WordPress coding standards)
 - `composer run-script phpcbf` - Auto-fix code style issues
@@ -18,7 +22,7 @@
 - **Type hints**: Use strict PHP 8.0 types + PHPStan types for precision
 - **Error handling**: Direct exception throwing in Action Scheduler context; use `wp_trigger_error()` elsewhere
 - **Dependencies**: Uses WooCommerce Action Scheduler 3.7+ for async webhooks
-- **Testing**: No test suite currently configured
+- **Testing**: wp-env application tests with fixture plugins that each bootstrap the shared framework
 
 ## Architecture
 Entity-based webhook framework using registry pattern. Webhooks extend abstract `Webhook` class, implement `init()` method, and register via `Service_Provider`.
@@ -63,3 +67,4 @@ Add new docs with an "@" mention to the "AGENTS.md" including a quick explanatio
 - @docs/notifications.mdx - Notification system, opt-in pattern, custom handlers
 - @docs/webhook-statefulness.mdx - Webhook statefulness rules and best practices
 - @docs/failure-handling.mdx - Failure monitoring, retry mechanism, blocking behavior
+- @docs/testing.mdx - wp-env application test setup, fixture plugins, and local test commands

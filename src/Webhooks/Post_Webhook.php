@@ -71,6 +71,10 @@ class Post_Webhook extends Webhook {
 	 * @param int $post_id The post ID.
 	 */
 	public function on_delete_post( int $post_id ): void {
+		if ( wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
+			return;
+		}
+
 		$payload = $this->post_handler->prepare_payload( $post_id );
 		$this->emit( 'delete', 'post', $post_id, $payload );
 	}

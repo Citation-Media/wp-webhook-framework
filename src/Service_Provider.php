@@ -27,6 +27,13 @@ class Service_Provider {
 	private static ?Service_Provider $instance = null;
 
 	/**
+	 * Registration state flag.
+	 *
+	 * @var bool
+	 */
+	private static bool $registered = false;
+
+	/**
 	 * The webhook dispatcher instance.
 	 *
 	 * @var Dispatcher
@@ -76,7 +83,10 @@ class Service_Provider {
 	 */
 	public static function register(): void {
 
-		self::bootstrap_action_scheduler();
+		// Guard against duplicate registration
+		if ( self::$registered ) {
+			return;
+		}
 
 		$instance = self::get_instance();
 
@@ -90,13 +100,9 @@ class Service_Provider {
 		// Defer webhook and notification registration until 'init' to avoid race conditions.
 		// This allows other plugins to hook into 'wpwf_register_webhooks' and
 		// 'wpwf_register_notifications' actions before they are fired.
-		add_action(
-			'init',
-			function () use ( $instance ) {
-				$instance->register_webhooks();
-				$instance->register_available_notifications();
-			}
-		);
+		add_action( 'init', array( $instance, 'on_init' ) );
+
+		self::$registered = true;
 	}
 
 	/**
@@ -114,6 +120,16 @@ class Service_Provider {
 		 * @param Webhook_Registry $registry The webhook registry instance.
 		 */
 		do_action( 'wpwf_register_webhooks', $this->registry );
+	}
+
+	/**
+	 * Handle the WordPress 'init' action.
+	 *
+	 * Registers webhooks and notification handlers during WordPress initialization.
+	 */
+	public function on_init(): void {
+		$this->register_available_notifications();
+		$this->register_webhooks();
 	}
 
 	/**
@@ -162,27 +178,5 @@ class Service_Provider {
 	public static function get_dispatcher(): Dispatcher {
 		$instance = self::get_instance();
 		return $instance->dispatcher;
-	}
-
-	/**
-	 * Require Action Scheduler's bootstrap file when it has not been loaded yet.
-	 *
-	 * Action Scheduler uses a type:wordpress-plugin Composer package, so its
-	 * bootstrap is never auto-required. This method resolves the path relative
-	 * to the library's own location in the consuming plugin's vendor tree and
-	 * requires it only once. Action Scheduler's own multi-version manager ensures
-	 * the highest installed version wins when multiple plugins bundle it.
-	 *
-	 * @return void
-	 */
-	private static function bootstrap_action_scheduler(): void {
-		if ( function_exists( 'as_schedule_single_action' ) ) {
-			return;
-		}
-
-		$bootstrap = __DIR__ . '/../../../woocommerce/action-scheduler/action-scheduler.php';
-		if ( file_exists( $bootstrap ) ) {
-			require_once $bootstrap;
-		}
 	}
 }

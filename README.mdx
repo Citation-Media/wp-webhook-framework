@@ -1,17 +1,19 @@
 ---
 title: WP Webhook Framework
-description: Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking POSTs for create/update/delete of posts, terms, and users.
+description: Entity-level webhooks for WordPress with scheduled and immediate delivery modes, retries, and failure monitoring.
 ---
 
 # WP Webhook Framework
 
 [![Quality Check](https://github.com/JUVOJustin/wp-webhook-framework/actions/workflows/quality-check.yml/badge.svg)](https://github.com/JUVOJustin/wp-webhook-framework/actions/workflows/quality-check.yml)
+[![Integration Tests](https://github.com/JUVOJustin/wp-webhook-framework/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/JUVOJustin/wp-webhook-framework/actions/workflows/integration-tests.yml)
 
-Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking POSTs for create/update/delete of posts, terms, and users. Meta changes trigger the entity update. ACF updates include field context. Features intelligent failure monitoring with email notifications, automatic blocking, and comprehensive filtering options.
+Entity-level webhooks for WordPress using Action Scheduler with optional immediate delivery mode. Sends POSTs for create/update/delete of posts, terms, and users. Meta changes trigger the entity update. ACF updates include field context. Features intelligent failure monitoring with email notifications, automatic blocking, and comprehensive filtering options.
 
 ## Features
 
-- **Action Scheduler dispatch** - 5s delay, non-blocking async delivery
+- **Delivery mode control** - Choose scheduled async delivery (default) or immediate synchronous first attempt
+- **Action Scheduler dispatch** - 5s delay for queued webhooks with deduplication
 - **Automatic deduplication** - Dispatcher-level on action+entity+id and meta-level per-request dedup for plugin hooks (ACF, Meta Box, etc.)
 - **Entity-aware delivery payloads** - Derives post_type, taxonomy, and roles at send time
 - **Send-time enrichment** - Adds REST URLs when available
@@ -26,10 +28,12 @@ Entity-level webhooks for WordPress using Action Scheduler. Sends non-blocking P
 ### Installation
 
 ```bash
-composer require juvo/wp-webhook-framework
+composer require citation-media/wp-webhook-framework
 ```
 
-Requires PHP 8.1+. Action Scheduler is automatically bootstrapped when calling `Service_Provider::register()`.
+Requires PHP 8.1+.
+
+Ensure Action Scheduler is active (dependency is declared).
 
 ### Basic Setup
 
@@ -37,6 +41,12 @@ Requires PHP 8.1+. Action Scheduler is automatically bootstrapped when calling `
 // Initialize the framework
 \juvo\WP_Webhook_Framework\Service_Provider::register();
 ```
+
+`Service_Provider::register()` is idempotent, so separate plugins can call it independently while sharing the same library checkout.
+
+:::tip
+If you are using a prefixer make sure to exclude this library. Due the strong typings used it will break plugins
+:::
 
 See [Configuration](./docs/configuration.mdx) for detailed configuration options.
 
@@ -59,6 +69,23 @@ add_action('wpwf_register_webhooks', function ($registry) {
 ```
 
 See [Configuration](./docs/configuration.mdx) for registry configuration and [Custom Webhooks](./docs/custom-webhooks.mdx) for creating your own webhooks.
+
+### Immediate Delivery Mode
+
+```php
+use juvo\WP_Webhook_Framework\Delivery_Mode;
+use juvo\WP_Webhook_Framework\Webhooks\Post_Webhook;
+
+add_action('wpwf_register_webhooks', function ($registry) {
+    $post = new Post_Webhook();
+    $post->webhook_url('https://api.example.com/posts')
+         ->delivery_mode(Delivery_Mode::IMMEDIATE)
+         ->max_retries(2);
+    $registry->register($post);
+});
+```
+
+Immediate mode sends the first attempt in the current request. If it fails, retries are still queued asynchronously with exponential backoff.
 
 ### Filter Payloads
 
@@ -86,7 +113,9 @@ See [Hooks and Filters](./docs/hooks-and-filters.mdx) for all available hooks an
 
 **Data Flow:**
 ```
-WordPress hook → Webhook → Handler::prepare_payload() → Webhook::emit() → Dispatcher → Action Scheduler → Dispatcher::process_scheduled_webhook() → Handler::prepare_delivery_payload() → HTTP POST
+WordPress hook → Webhook → Handler::prepare_payload() → Webhook::emit() → Dispatcher
+  ├─ scheduled mode: queue in Action Scheduler → process_scheduled_webhook() → HTTP POST
+  └─ immediate mode: send now in current request → HTTP POST
 ```
 
 ### Webhook Statefulness
@@ -139,6 +168,11 @@ See [Failure Handling](./docs/failure-handling.mdx) for configuration and custom
 
 ```bash
 composer install              # Install dependencies
+npm install                   # Install wp-env tooling
+npm run wp-env:start          # Start WordPress test environment
+npm run composer:install      # Install Composer dependencies inside wp-env
+npm run test:phpunit          # Run application tests
+npm run wp-env:stop           # Stop WordPress test environment
 composer run-script phpstan   # Run static analysis
 composer run-script phpcs     # Lint code
 composer run-script phpcbf    # Auto-fix code style
@@ -151,4 +185,5 @@ composer run-script phpcbf    # Auto-fix code style
 - [Hooks and Filters](./docs/hooks-and-filters.mdx) - All available hooks and filters with examples
 - [Failure Handling](./docs/failure-handling.mdx) - Failure monitoring, retry mechanism, and blocking behavior
 - [Notifications](./docs/notifications.mdx) - Notification system, opt-in pattern, and custom handlers
+- [Testing](./docs/testing.mdx) - wp-env application test suite, fixture plugins, and validation workflow
 - [Webhook Statefulness](./docs/webhook-statefulness.mdx) - Webhook statelessness rules and best practices

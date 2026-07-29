@@ -207,25 +207,28 @@ add_filter( 'wpwf_headers', function ( array $headers, string $entity, int|strin
 Exclude specific meta keys from triggering webhooks.
 
 **Parameters:**
-- `$excluded_keys` (array<int,string>) - Meta keys to exclude
+- `$excluded` (bool) - Whether the current key should be excluded
 - `$meta_key` (string) - The current meta key
 - `$meta_type` (string) - The meta type (post, term, user)
 - `$object_id` (int) - The object ID
 
-**Returns:** array<int,string>
+**Returns:** bool
 
-**Default excluded:** `_edit_lock`, `_edit_last`, `_acf_changed`, `_acf_cache_*`
+**Default excluded:** `_edit_lock`, `_edit_last`, `session_tokens`, and any meta key starting with `_`
 
 ```php
-add_filter( 'wpwf_excluded_meta', function ( array $excluded_keys, string $meta_key, string $meta_type, int $object_id ): array {
-    $excluded_keys[] = '_my_internal_field';
-    return $excluded_keys;
+add_filter( 'wpwf_excluded_meta', function ( bool $excluded, string $meta_key, string $meta_type, int $object_id ): bool {
+    if ( '_my_internal_field' === $meta_key ) {
+        return true;
+    }
+
+    return $excluded;
 }, 10, 4 );
 ```
 
-### `wpwf_failure_notification_email`
+### `wpwf_blocked_notification_email`
 
-Filter failure notification email data. Return `false` to prevent email.
+Filter blocked notification email data. Return `false` to prevent email.
 
 **Parameters:**
 - `$email_data` (array{recipient: string, subject: string, message: string, headers: array, url: string, error_message: string, response: mixed})
@@ -236,13 +239,13 @@ Filter failure notification email data. Return `false` to prevent email.
 
 ```php
 // Custom recipient
-add_filter( 'wpwf_failure_notification_email', function ( array $email_data, string $url, mixed $response ): array {
+ add_filter( 'wpwf_blocked_notification_email', function ( array $email_data, string $url, mixed $response ): array {
     $email_data['recipient'] = 'webhooks@example.com';
     return $email_data;
 }, 10, 3 );
 
 // Disable email notifications
-add_filter( 'wpwf_failure_notification_email', fn() => false );
+ add_filter( 'wpwf_blocked_notification_email', fn() => false );
 ```
 
 ### `wpwf_max_consecutive_failures`
@@ -274,6 +277,28 @@ Filter webhook request timeout in seconds.
 ```php
 add_filter( 'wpwf_timeout', function ( int $timeout, string $webhook_name ): int {
     return 'bulk_sync_webhook' === $webhook_name ? 120 : $timeout;
+}, 10, 2 );
+```
+
+### `wpwf_delivery_mode`
+
+Filter the webhook delivery mode.
+
+**Parameters:**
+- `$delivery_mode` (string) - The configured mode value (`scheduled` or `immediate`)
+- `$webhook_name` (string) - The webhook name
+
+**Returns:** string
+
+```php
+use juvo\WP_Webhook_Framework\Delivery_Mode;
+
+add_filter( 'wpwf_delivery_mode', function ( string $delivery_mode, string $webhook_name ): string {
+    if ( 'critical_webhook' !== $webhook_name ) {
+        return $delivery_mode;
+    }
+
+    return Delivery_Mode::IMMEDIATE->value;
 }, 10, 2 );
 ```
 
@@ -331,8 +356,9 @@ Example payload (post):
 
 Filters are applied in this order:
 
-1. `wpwf_payload` - Modify or prevent payload
+1. `wpwf_delivery_mode` - Resolve scheduled vs immediate mode
 2. `wpwf_url` - Customize webhook URL
-3. `wpwf_request_body` - Modify final request body before send
-4. `wpwf_headers` - Customize HTTP headers
-5. `wpwf_excluded_meta` - Filter meta keys (meta webhooks only)
+3. `wpwf_payload` - Modify or prevent payload
+4. `wpwf_request_body` - Modify final request body before send
+5. `wpwf_headers` - Customize HTTP headers
+6. `wpwf_excluded_meta` - Filter meta keys (meta webhooks only)

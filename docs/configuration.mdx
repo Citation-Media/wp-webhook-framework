@@ -14,11 +14,33 @@ Configure individual webhooks using chainable methods.
 | Method | Description | Default |
 |--------|-------------|---------|
 | `webhook_url(string)` | Custom endpoint URL | None |
+| `delivery_mode(Delivery_Mode)` | Delivery strategy (`SCHEDULED` or `IMMEDIATE`) | `Delivery_Mode::SCHEDULED` |
 | `max_consecutive_failures(int)` | Failures before blocking (0 disables) | 10 |
 | `max_retries(int)` | Retry attempts per failed event | 0 |
 | `timeout(int)` | HTTP timeout in seconds (1-300) | 30 |
 | `headers(array)` | Custom HTTP headers | [] |
 | `notifications(array)` | Enable notification handlers | [] |
+
+### Delivery Modes
+
+The base `Webhook` class supports two delivery modes through `delivery_mode()` and the `Delivery_Mode` enum:
+
+| Enum case | Behavior | Default |
+|----------|----------|---------|
+| `Delivery_Mode::SCHEDULED` | Queue delivery in Action Scheduler with deduplication | **Yes** |
+| `Delivery_Mode::IMMEDIATE` | Send first attempt in the current request | No |
+
+```php
+use juvo\WP_Webhook_Framework\Delivery_Mode;
+use juvo\WP_Webhook_Framework\Webhooks\Post_Webhook;
+
+$post = new Post_Webhook();
+$post->webhook_url( 'https://api.example.com/posts' )
+     ->delivery_mode( Delivery_Mode::IMMEDIATE )
+     ->max_retries( 2 );
+```
+
+When `Delivery_Mode::IMMEDIATE` fails, retries still run through Action Scheduler using the configured backoff logic.
 
 ### Meta Emission Modes
 
@@ -51,6 +73,7 @@ so rapid meta changes on the same post collapse into a single delivery.
 
 ```php
 $webhook->webhook_url( 'https://api.example.com' )
+        ->delivery_mode( Delivery_Mode::SCHEDULED )
         ->max_consecutive_failures( 5 )
         ->max_retries( 3 )
         ->timeout( 60 )

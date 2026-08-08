@@ -62,6 +62,7 @@ See [Astro Starlight Frontmatter Reference](https://starlight.astro.build/refere
 Add new docs with an "@" mention to the "AGENTS.md" including a quick explanation. Keep the docs always up to date.
 - @README.mdx - Quick start, basic usage, architecture overview
 - @docs/custom-webhooks.mdx - Creating webhooks, registry pattern, plugin integrations (WooCommerce, CF7, Gravity Forms)
+- @docs/email-webhooks.mdx - Capturing `wp_mail()` calls, structured email payloads, and optional send aborting
 - @docs/hooks-and-filters.mdx - All available hooks and filters with examples
 - @docs/configuration.mdx - Constants, configuration methods, precedence rules
 - @docs/notifications.mdx - Notification system, opt-in pattern, custom handlers

@@ -48,6 +48,7 @@ npm run wp-env:stop
 - `tests/phpunit/PostWebhookCrudTest.php`, `tests/phpunit/TermWebhookCrudTest.php`, and `tests/phpunit/UserWebhookCrudTest.php` provide separate CRUD examples per entity.
 - `tests/phpunit/MetaWebhookTest.php` covers meta emission modes, parent entity updates, and delivery payload enrichment.
 - `tests/phpunit/DeliveryModeTest.php` covers scheduled vs immediate dispatch behavior.
+- `tests/phpunit/EmailWebhookTest.php` covers structured `wp_mail()` payloads, email-specific filters, and optional mail aborting.
 - `tests/phpunit/WebhookFilterTest.php` covers runtime filters for delivery mode, URL routing, payload suppression, headers, and request body changes.
 - `tests/phpunit/WebhookFailureHandlingTest.php` covers retries, backoff scheduling metadata, and URL blocking behavior.
 - `tests/phpunit/NotificationAndFailureStateTest.php` covers blocked email notifications and expired-block recovery.

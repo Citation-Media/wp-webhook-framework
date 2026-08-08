@@ -20,6 +20,7 @@ Configure individual webhooks using chainable methods.
 | `timeout(int)` | HTTP timeout in seconds (1-300) | 30 |
 | `headers(array)` | Custom HTTP headers | [] |
 | `notifications(array)` | Enable notification handlers | [] |
+| `abort_wp_mail(bool)` | Replace the original `wp_mail()` send (email webhook only) | `false` |
 
 ### Delivery Modes
 
@@ -81,6 +82,27 @@ $webhook->webhook_url( 'https://api.example.com' )
         ->notifications( array( 'blocked' ) );
 ```
 
+### Email Webhook Configuration
+
+The built-in `Email_Webhook` can either observe every `wp_mail()` call or replace
+the original email send entirely:
+
+```php
+use juvo\WP_Webhook_Framework\Webhook_Registry;
+use juvo\WP_Webhook_Framework\Webhooks\Email_Webhook;
+
+add_action( 'wpwf_register_webhooks', function ( Webhook_Registry $registry ): void {
+    $email = new Email_Webhook();
+
+    $email->webhook_url( 'https://api.example.com/emails' )
+          ->abort_wp_mail();
+
+    $registry->register( $email );
+} );
+```
+
+`abort_wp_mail()` uses WordPress' `pre_wp_mail` short-circuit hook, so the webhook can stop delivery before PHPMailer and SMTP plugins run.
+
 ## Registry Configuration
 
 Register webhooks via the `wpwf_register_webhooks` action. No webhooks are
@@ -119,6 +141,8 @@ Use WordPress filters for dynamic configuration. See [Hooks and Filters](./hooks
 - `wpwf_url` - Dynamic URL routing
 - `wpwf_headers` - Dynamic headers
 - `wpwf_payload` - Payload modification
+- `wpwf_email_payload` - Email-only structured payload modification
+- `wpwf_email_abort_send` - Per-email `wp_mail()` short-circuit control
 - `wpwf_excluded_meta` - Meta key filtering
 
 ## Options-Based Configuration

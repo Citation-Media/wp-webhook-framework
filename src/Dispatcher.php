@@ -35,13 +35,14 @@ class Dispatcher {
 	 * @param array<string,mixed> $headers       The request headers.
 	 *
 	 * @throws WP_Exception If Action Scheduler is not active or URL/payload issues.
+	 * @return bool True when a new action was scheduled.
 	 */
-	public function schedule( string $action, string $entity, int|string $id, string $url = '', array $payload = array(), array $headers = array() ): void {
+	public function schedule( string $action, string $entity, int|string $id, string $url = '', array $payload = array(), array $headers = array() ): bool {
 		$this->ensure_action_scheduler_available();
 
 		$dispatch_data = $this->resolve_dispatch_data( $entity, $id, $url, $payload );
 		if ( null === $dispatch_data ) {
-			return;
+			return false;
 		}
 
 		$url     = $dispatch_data['url'];
@@ -66,7 +67,7 @@ class Dispatcher {
 		);
 
 		if ( ! empty( $query ) ) {
-			return;
+			return false;
 		}
 
 		as_schedule_single_action(
@@ -82,6 +83,8 @@ class Dispatcher {
 			),
 			$group
 		);
+
+		return true;
 	}
 
 	/**
@@ -98,11 +101,12 @@ class Dispatcher {
 	 * @param array<string,mixed> $headers       The request headers.
 	 *
 	 * @throws WP_Exception If URL/payload/webhook configuration is invalid.
+	 * @return bool True when the webhook request was attempted.
 	 */
-	public function dispatch_immediately( string $action, string $entity, int|string $id, string $url = '', array $payload = array(), array $headers = array() ): void {
+	public function dispatch_immediately( string $action, string $entity, int|string $id, string $url = '', array $payload = array(), array $headers = array() ): bool {
 		$dispatch_data = $this->resolve_dispatch_data( $entity, $id, $url, $payload );
 		if ( null === $dispatch_data ) {
-			return;
+			return false;
 		}
 
 		$webhook = $this->get_webhook_from_headers( $headers );
@@ -116,6 +120,8 @@ class Dispatcher {
 			$headers,
 			$webhook
 		);
+
+		return true;
 	}
 
 	/**
